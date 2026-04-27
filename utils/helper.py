@@ -21,3 +21,20 @@ def load_config(config_path="config.yaml"):
         config = yaml.safe_load(file)
     config = Config(config)
     return config
+
+def save_checkpoint(epoch, model, optimizer, cur_lr, val_acc, config, train_transform, val_transform, save_dir):
+    checkpoint_path = os.path.join(save_dir, f'epoch{epoch}_model.pth')
+
+    torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'learning_rate': cur_lr,
+            'val_accuracy': val_acc,
+            'config': config,
+            'train_transform': train_transform,
+            'val_transform': val_transform
+
+        }, checkpoint_path)
+
+    print(f"Epoch:{epoch} checkpoint has been saved at:{checkpoint_path}")
