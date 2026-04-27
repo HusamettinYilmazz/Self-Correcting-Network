@@ -67,3 +67,20 @@ class FullySuperVOCDataset(Dataset):
 
     def __len__(self):
         return len(self.data)
+    
+    def __getitem__(self, idx):
+        img_num = self.data[idx]
+
+        img_path = os.path.join(self.data_path, "JPEGImages", f"{img_num}.jpg")
+        mask_path = os.path.join(self.data_path, "SegmentationClass", f"{img_num}.png")
+        
+        image = np.array(Image.open(img_path).convert("RGB"))
+        mask = np.array(Image.open(mask_path)) 
+        weak_mask = None ## mask[] OR
+
+        if self.transform:
+            transformed = self.transform(image=image, mask=mask)
+            image = transformed["image"]
+            mask  = transformed["mask"]
+
+        return image, mask
