@@ -2,6 +2,15 @@ from itertools import cycle
 import torch
 
 
+def unsupervised_loss(w_primary_outputs, correcting_logits):
+
+    log_probs = torch.log_softmax(w_primary_outputs, dim=1)
+    pseudo = torch.softmax(correcting_logits, dim=1).detach()
+
+    unsup_loss = -(pseudo * log_probs).sum(dim=1).mean()
+    
+    return unsup_loss
+
 def train_model_epoch(epoch, data_loaders, device, models,
                        optimizers, loss_func, scaler, logger, lambda_u=0.5):
     
