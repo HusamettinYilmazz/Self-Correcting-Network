@@ -51,7 +51,7 @@ class FullySuperVOCDataset(Dataset):
         """
         tree = ET.parse(xml_path)
         root = tree.getroot()
-        img_name = root.find("filename").text
+        img_name = root.find("filename").text[:-4]
 
         boxes = []
         for obj in root.findall("object"):
