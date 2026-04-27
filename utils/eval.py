@@ -45,3 +45,9 @@ def compute_confusion_matrix(y_true, y_preds, class_names, ignore_index=255):
     cm = confusion_matrix(y_true, y_preds, labels=list(range(num_classes)))
 
     return torch.tensor(cm, dtype=torch.long)
+
+def compute_iou_per_class(cm):
+    return (cm.diag() / (cm.sum(dim=1) + cm.sum(dim=0) - cm.diag() + 1e-10)).cpu().numpy()
+
+def compute_per_class_accuracy(cm):
+    return (cm.diag() / (cm.sum(dim=1) + 1e-10)).cpu().numpy()
