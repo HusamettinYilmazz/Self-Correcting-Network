@@ -88,7 +88,7 @@ class FullySuperVOCDataset(Dataset):
         mask = np.array(Image.open(mask_path)) 
         
         H, W = mask.shape
-        weak_mask = np.zeros((H, W), dtype=np.unit8)
+        weak_mask = np.zeros((H, W), dtype=np.uint8)
 
         for box in self.bbox[img_num]:
             cls_name = box.label
@@ -107,11 +107,8 @@ class FullySuperVOCDataset(Dataset):
             weak_mask[ymin:ymax, xmin:xmax] = cls_id
 
         if self.transform:
-            transformed = self.transform(image=image, mask=mask)
+            transformed = self.transform(image=image, masks=[mask, weak_mask])
             image = transformed["image"]
-            mask  = transformed["mask"]
-            
-            transformed_weak = self.transform(image=image, mask=weak_mask)
-            weak_mask = transformed_weak["mask"]
+            mask, weak_mask = transformed["masks"]
 
         return image, mask, weak_mask
