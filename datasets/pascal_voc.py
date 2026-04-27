@@ -1,5 +1,7 @@
 import os 
 import sys
+import random
+random.seed(42)
 
 import numpy as np
 from PIL import Image
@@ -20,14 +22,30 @@ class_map = {
     "train": 19, "tvmonitor": 20
 }
 
-class FullySuperVOCDataset(Dataset):
-    def __init__(self, data_path, data_type="train", transform=None):
+class VOCDataset(Dataset):
+    def __init__(self, data_path, data_type="train", is_sup=True, split_ratio=0.25, transform=None):
         super().__init__()
         
         self.data_path = data_path
         self.data_type = data_type
+        self.is_sup = is_sup
+        self.split_ratio = split_ratio
         self.transform = transform
         self.data, self.bbox = self._load_data(self.data_type)
+
+        rng = random.Random(42)
+        indices = list(range(len(self.data)))
+        rng.shuffle(indices)
+
+        split = int(self.split_ratio * len(indices))
+
+        if self.is_sup:
+            selected_idx = indices[:split]
+        else:
+            selected_idx = indices[split:]
+
+        self.data = [self.data[i] for i in selected_idx]
+        self.bbox = {k: self.bbox[k] for k in self.data if k in self.bbox}
 
     def _load_data(self, data_type):
         file_path = os.path.join(self.data_path, "ImageSets", "Segmentation", f"{data_type}.txt")
@@ -111,4 +129,7 @@ class FullySuperVOCDataset(Dataset):
             image = transformed["image"]
             mask, weak_mask = transformed["masks"]
 
-        return image, mask, weak_mask
+        if self.is_sup:
+            return image, mask, weak_mask
+        
+        return image, weak_mask
