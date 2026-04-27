@@ -10,6 +10,16 @@ import xml.etree.ElementTree as ET
 
 from utils.boxinfo import BoxInfo
 
+class_map = {
+    "background": 0,
+    "aeroplane": 1, "bicycle": 2, "bird": 3, "boat": 4,
+    "bottle": 5, "bus": 6, "car": 7, "cat": 8,
+    "chair": 9, "cow": 10, "diningtable": 11, "dog": 12,
+    "horse": 13, "motorbike": 14, "person": 15,
+    "pottedplant": 16, "sheep": 17, "sofa": 18,
+    "train": 19, "tvmonitor": 20
+}
+
 class FullySuperVOCDataset(Dataset):
     def __init__(self, data_path, data_type="train", transform=None):
         super().__init__()
@@ -17,7 +27,7 @@ class FullySuperVOCDataset(Dataset):
         self.data_path = data_path
         self.data_type = data_type
         self.transform = transform
-        self.data = self._load_data(self.data_type)
+        self.data, self.bbox = self._load_data(self.data_type)
 
     def _load_data(self, data_type):
         file_path = os.path.join(self.data_path, "ImageSets", "Segmentation", f"{data_type}.txt")
@@ -31,7 +41,7 @@ class FullySuperVOCDataset(Dataset):
                 data.append(line)
                 bbox[line] = self._parse_xml(os.path.join(annot_file_path, f"{line}.xml"))
 
-        return data
+        return data, bbox
 
     def _parse_xml(self, xml_path): ## be sure of its correctness and use it inside _load_data
         """
@@ -76,7 +86,7 @@ class FullySuperVOCDataset(Dataset):
         
         image = np.array(Image.open(img_path).convert("RGB"))
         mask = np.array(Image.open(mask_path)) 
-        weak_mask = None ## mask[] OR
+        
 
         if self.transform:
             transformed = self.transform(image=image, mask=mask)
