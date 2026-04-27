@@ -110,5 +110,8 @@ class FullySuperVOCDataset(Dataset):
             transformed = self.transform(image=image, mask=mask)
             image = transformed["image"]
             mask  = transformed["mask"]
+            
+            transformed_weak = self.transform(image=image, mask=weak_mask)
+            weak_mask = transformed_weak["mask"]
 
         return image, mask, weak_mask
