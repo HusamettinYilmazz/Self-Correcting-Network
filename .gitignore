@@ -220,3 +220,5 @@ __marimo__/
 .streamlit/secrets.toml
 
 .vscode
+assets/VOC2012_train_val
+assets/VOC2012_test
