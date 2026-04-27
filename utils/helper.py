@@ -38,3 +38,12 @@ def save_checkpoint(epoch, model, optimizer, cur_lr, val_acc, config, train_tran
         }, checkpoint_path)
 
     print(f"Epoch:{epoch} checkpoint has been saved at:{checkpoint_path}")
+
+def lr_vs_epoch(num_epochs, lrs, save_dir):
+    plt.figure(figsize=(8, 5))
+    plt.plot(range(1, num_epochs + 1), lrs, marker='o', linestyle='-')
+    plt.xlabel("Epoch")
+    plt.ylabel("Learning Rate")
+    plt.title("Learning Rate vs. Epoch")
+    plt.grid(True)
+    plt.savefig(os.path.join(save_dir, 'epoch_vs_lr.png'), bbox_inches='tight')
