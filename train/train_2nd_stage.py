@@ -3,7 +3,7 @@ import torch
 from utils.eval import compute_confusion_matrix, compute_iou_per_class
 from utils.eval import compute_per_class_accuracy, plot_confusion_matrix
 
-def train_correction_model_epoch(epoch, data_loader, device, models, optimizer, loss_func, scaler, logger):
+def train_correction_model_epoch(epoch, data_loader, device, models, optimizers, loss_func, scaler, logger):
     total_primary_loss, total_correcting_loss = 0.0, 0.0
     
     models["primary"].train()
@@ -25,12 +25,13 @@ def train_correction_model_epoch(epoch, data_loader, device, models, optimizer, 
         primary_loss = loss_func(primary_outputs, masks)
         correcting_loss = loss_func(correcting_outputs, masks)
 
-        optimizer.zero_grad()
-        
+        optimizers["primary"].zero_grad()
         primary_loss.backward()
+        optimizers["primary"].step()
+
+        optimizers["correcting"].zero_grad()
         correcting_loss.backward()
-        
-        optimizer.step()
+        optimizers["correcting"].step()
         
         total_primary_loss += primary_loss.item()
         total_correcting_loss += correcting_loss.item()
@@ -48,4 +49,5 @@ def train_correction_model_epoch(epoch, data_loader, device, models, optimizer, 
     correcting_avg_loss = total_correcting_loss/ len(data_loader)
     logger.info(f"PRIMARY MODEL Epoch:{epoch} average train Loss:{primary_avg_loss:.3f}")
     logger.info(f"CORRECTING NETWORK Epoch:{epoch} average train Loss:{correcting_avg_loss:.3f}")
+    logger.info(f"Epoch:{epoch} average train Loss:{(primary_avg_loss+correcting_avg_loss)/2:.3f}")
     return primary_avg_loss, correcting_avg_loss
