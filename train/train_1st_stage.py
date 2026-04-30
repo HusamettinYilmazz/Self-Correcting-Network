@@ -1,6 +1,6 @@
 import torch
-from utils.eval import compute_confusion_matrix, compute_iou_per_class
-from utils.eval import compute_per_class_accuracy
+from utils.eval import compute_confusion_matrix, plot_confusion_matrix
+from utils.eval import compute_per_class_accuracy,  compute_iou_per_class
 
 def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, loss_func, scaler, logger):
     total_loss = 0.0
@@ -26,7 +26,7 @@ def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, 
                 average train Loss:{avg_loss:.3f}")
     return avg_loss
 
-def validate_ancillary_model(epoch, data_loader, device, models, loss_func, class_names, logger):
+def validate_ancillary_model(epoch, data_loader, device, models, loss_func, class_names, logger, save_dir=None):
     total_loss = 0.0
     all_preds, all_masks = [], []
 
@@ -41,21 +41,26 @@ def validate_ancillary_model(epoch, data_loader, device, models, loss_func, clas
             loss = loss_func(preds, masks)
             total_loss += loss.item()
 
-            all_preds.append(preds.argmax(dim=1).cpu())
-            all_masks.append(masks.cpu())
+            cm = compute_confusion_matrix(
+                masks,
+                preds,
+                class_names,
+                ignore_index=255
+            )
 
-    all_preds = torch.cat(all_preds)
-    all_masks = torch.cat(all_masks)
+            total_cm = cm if total_cm is None else total_cm + cm
 
-    confusion  = compute_confusion_matrix(all_masks, all_preds, class_names)
-    iou        = compute_iou_per_class(confusion)
-    acc        = compute_per_class_accuracy(confusion)
+    iou = compute_iou_per_class(total_cm)
+    acc = compute_per_class_accuracy(total_cm)
 
     metrics = {
         "avg_loss": total_loss / len(data_loader),
         "mIoU":     iou.mean().item(),
         "avg_acc":  acc.mean().item(),
     }
+
+    if save_dir is not None:
+        plot_confusion_matrix(total_cm, class_names, save_path=save_dir)
 
     logger.info(f"Epoch: {epoch} | Stage 1 validation")
     logger.info(metrics)
