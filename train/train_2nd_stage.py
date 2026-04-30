@@ -1,6 +1,9 @@
 import torch
 
-def train_correcting_model_epoch(epoch, data_loader, device, models, optimizers, loss_func, scaler, logger):
+from utils.eval import compute_confusion_matrix, compute_iou_per_class
+from utils.eval import compute_per_class_accuracy, plot_confusion_matrix
+
+def train_correction_model_epoch(epoch, data_loader, device, models, optimizer, loss_func, scaler, logger):
     total_primary_loss, total_correcting_loss = 0.0, 0.0
     
     models["primary"].train()
@@ -11,6 +14,7 @@ def train_correcting_model_epoch(epoch, data_loader, device, models, optimizers,
         
         primary_outputs = models["primary"](imgs)
         with torch.no_grad():
+            models["ancillary"].freeze()
             ancillary_outputs = models["ancillary"](imgs, bboxs)
 
         correcting_outputs = models["correcting"](
@@ -21,20 +25,24 @@ def train_correcting_model_epoch(epoch, data_loader, device, models, optimizers,
         primary_loss = loss_func(primary_outputs, masks)
         correcting_loss = loss_func(correcting_outputs, masks)
 
-        optimizers["primary"].zero_grad()
+        optimizer.zero_grad()
+        
         primary_loss.backward()
-        optimizers["primary"].step()
-
-        optimizers["correcting"].zero_grad()
         correcting_loss.backward()
-        optimizers["correcting"].step()
+        
+        optimizer.step()
         
         total_primary_loss += primary_loss.item()
         total_correcting_loss += correcting_loss.item()
 
         if batch_idx % 10 == 0:
-            logger.info(f"TRAIN PRIMARY MODEL: Epoch:{epoch} at Batch:{batch_idx}/{len(data_loader)} Loss:{primary_loss.item():.3f}")
-            logger.info(f"TRAIN CORRECTING NETWORK: Epoch:{epoch} at Batch:{batch_idx}/{len(data_loader)} Loss:{correcting_loss.item():.3f}")
+            logger.info(f"TRAIN PRIMARY MODEL: Epoch:{epoch} \
+                        at Batch:{batch_idx}/{len(data_loader)} \
+                        Loss:{primary_loss.item():.3f}")
+            
+            logger.info(f"TRAIN CORRECTING NETWORK: Epoch:{epoch} \
+                        at Batch:{batch_idx}/{len(data_loader)} \
+                        Loss:{correcting_loss.item():.3f}")
     
     primary_avg_loss = total_primary_loss/ len(data_loader)
     correcting_avg_loss = total_correcting_loss/ len(data_loader)
