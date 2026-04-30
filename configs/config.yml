@@ -1,0 +1,46 @@
+
+experiment:
+  name: ""
+  version: "1.0"
+  seed: 31
+
+data:
+  dataset_name: "VOC-2012"
+  dataset_path: "assets"
+  train_dataset_path: "VOC2012_train_val"
+  test_dataset_path: "VOC2012_test"
+  output_path: "outputs/"
+
+model:
+  model_name: ""
+  backbone: ""
+  num_classes: 21
+  class_labels:
+    - background
+    - aeroplane
+    - bicycle
+    - bird
+    - boat
+    - bottle
+    - bus
+    - car
+    - cat
+    - chair
+    - cow
+    - diningtable
+    - dog
+    - horse
+    - motorbike
+    - person
+    - pottedplant
+    - sheep
+    - sofa
+    - train
+    - tvmonitor
+
+training:
+  optimizer: "AdamW"
+  batch_size: 4
+  num_epochs: 2
+  learning_rate: 1e-3
+  weight_decay: 1
