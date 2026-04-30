@@ -52,46 +52,71 @@ def train_correction_model_epoch(epoch, data_loader, device, models, optimizers,
     logger.info(f"Epoch:{epoch} average train Loss:{(primary_avg_loss+correcting_avg_loss)/2:.3f}")
     return primary_avg_loss, correcting_avg_loss
 
-def validate_correction_model(epoch, data_loader, device, model, loss_func, class_names, logger, save_dir=None):
-    model.eval()
-
+def validate_correction_model(epoch, data_loader, device, models, loss_func, class_names, logger, save_dir=None):
     total_loss = 0.0
-    total_cm = None
+    primary_total_cm, correcting_total_cm = None, None
 
+    models["primary"].eval()
+    models["correcting"].eval()
+    models["ancillary"].eval()
     with torch.no_grad():
         for imgs, bboxes, masks in data_loader:
             imgs = imgs.to(device)
             masks = masks.to(device).long()
 
-            outputs = model(imgs)
-            loss = loss_func(outputs, masks)
+            primary_outputs = models["primary"](imgs)
+            ancillary_outputs = models["ancillary"](imgs, bboxes)
+            correcting_outputs = models["correcting"](primary_outputs, ancillary_outputs)
+            
+            primary_loss = loss_func(primary_outputs, masks)
+            correcting_loss = loss_func(correcting_outputs, masks)
 
-            total_loss += loss.item()
+            total_primary_loss += primary_loss.item()
+            total_correcting_loss += correcting_loss.item()
 
-            preds = outputs.argmax(dim=1)
-
-            cm = compute_confusion_matrix(
+            primary_preds = primary_outputs.argmax(dim=1)
+            correcting_preds = correcting_outputs.argmax(dim=1)
+            
+            primary_cm = compute_confusion_matrix(
                 masks,
-                preds,
+                primary_preds,
                 class_names,
                 ignore_index=255
             )
 
-            total_cm = cm if total_cm is None else total_cm + cm
+            correcting_cm = compute_confusion_matrix(
+                masks,
+                correcting_preds,
+                class_names,
+                ignore_index=255
+            )
 
-    iou_per_class = compute_iou_per_class(total_cm)
-    acc_per_class = compute_per_class_accuracy(total_cm)
+            primary_total_cm = primary_cm if primary_total_cm is None \
+                                                else primary_total_cm + primary_cm
+            
+            correcting_total_cm = correcting_cm if correcting_total_cm is None \
+                                                else correcting_total_cm + correcting_cm
+
+    primary_iou_per_class = compute_iou_per_class(primary_total_cm)
+    primary_acc_per_class = compute_per_class_accuracy(primary_total_cm)
+
+    correcting_iou_per_class = compute_iou_per_class(correcting_total_cm)
+    correcting_acc_per_class = compute_per_class_accuracy(correcting_total_cm)
 
     metrics = {
         "avg_loss": total_loss / len(data_loader),
-        "iou_per_class": iou_per_class,
-        "acc_per_class": acc_per_class,
+        "primary_iou_per_class": primary_iou_per_class,
+        "primary_acc_per_class": primary_acc_per_class,
+
+        "correcting_iou_per_class": correcting_iou_per_class,
+        "correcting_acc_per_class": correcting_acc_per_class
     }
 
     logger.info(f"Epoch: {epoch} | Stage 2 validation")
     logger.info(metrics)
 
     if save_dir is not None:
-        plot_confusion_matrix(total_cm, class_names, save_path=save_dir)
+        plot_confusion_matrix(primary_total_cm, class_names, save_path=save_dir)
+        plot_confusion_matrix(correcting_total_cm, class_names, save_path=save_dir)
 
     return metrics
