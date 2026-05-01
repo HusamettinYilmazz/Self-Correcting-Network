@@ -1,6 +1,8 @@
 from itertools import cycle
 import torch
 
+from utils.eval import compute_confusion_matrix, compute_iou_per_class
+from utils.eval import compute_per_class_accuracy, plot_confusion_matrix
 
 def unsupervised_loss(w_primary_outputs, correcting_logits):
 
@@ -11,8 +13,11 @@ def unsupervised_loss(w_primary_outputs, correcting_logits):
     
     return unsup_loss
 
+def compute_lambda(epoch):
+    return min(1.0, epoch/10)
+
 def train_model_epoch(epoch, data_loaders, device, models,
-                       optimizers, loss_func, scaler, logger, lambda_u=0.5):
+                       optimizers, loss_func, scaler, logger):
     
     total_loss = 0.0
     
@@ -36,6 +41,7 @@ def train_model_epoch(epoch, data_loaders, device, models,
 
         primary_loss = loss_func(f_primary_outputs, f_masks)
         unsup_loss = unsupervised_loss(w_primary_outputs, correcting_logits)
+        lambda_u = compute_lambda(epoch)
 
         loss = primary_loss + lambda_u * unsup_loss
         optimizers["primary"].zero_grad()
