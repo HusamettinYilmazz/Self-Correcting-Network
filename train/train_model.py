@@ -21,7 +21,65 @@ from models.primary_model import PrimarySegmentationModel
 from models.ancillary_model import AncillarySegmentationModel
 from models.self_correcting_model import SelfCorrectingNetwrokFactory
 
+from .train_1st_stage import train_ancillary_model_epoch, validate_ancillary_model
+from .train_2nd_stage import train_correction_model_epoch, validate_correction_model
+from .train_3rd_stage import train_primary_model_epoch, validate_primary_model
 
+
+def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_loader, 
+                         train_transform, val_transform,device, models,
+                         optimizers, schedulers, loss_func, logger, save_dir):
+    
+    lrs = []
+    for epoch in range(starting_epoch, config.training['stage1_num_epochs']+1):
+        logger.info(f"Epoch: {epoch}/{config.training['stage1_num_epochs']} \
+                    in ancillary model training (Stage 1)")
+        
+        _ = train_ancillary_model_epoch(
+                    epoch=epoch,
+                    data_loader=train_loaders['f1_loader'], 
+                    device=device,
+                    models=models,
+                    optimizers=optimizers,
+                    loss_func=loss_func,
+                    logger=logger
+                )
+
+        save_file = os.path.join(save_dir, f'epoch{epoch}_conf_matrix.png')
+        val_metrics = validate_ancillary_model(
+                        epoch=epoch,
+                        data_loader=val_loader,
+                        device=device,
+                        models=models,
+                        loss_func=loss_func,
+                        class_names= config.model["class_labels"],
+                        logger=logger,
+                        save_dir=save_file
+                    )
+
+        
+        
+        logger.info(f"Current learning rate: {optimizers['ancillary'].param_groups[0]['lr']}")
+        schedulers["ancillary"].step(val_metrics['avg_loss'])
+        
+        cur_lr = optimizers['ancillary'].param_groups[0]['lr']
+        lrs.append(cur_lr)
+        
+        save_checkpoint(epoch, 
+                        models["ancillary"],
+                        optimizers['ancillary'], 
+                        cur_lr, 
+                        val_metrics['acc_per_class'], 
+                        config, 
+                        train_transform, 
+                        val_transform, 
+                        save_dir)
+        
+    logger.info(f"First stage training completed successfully")
+
+    lr_vs_epoch(config.training['num_epochs']-starting_epoch+1, lrs, save_dir)
+
+    return 
 
 
 
