@@ -158,6 +158,57 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
     lr_vs_epoch(config.training['num_epochs']-starting_epoch+1, prim_lrs, save_dir)
     lr_vs_epoch(config.training['num_epochs']-starting_epoch+1, corr_lrs, save_dir)
 
+def stage3_training_loop(starting_epoch, config: Config, train_loaders, val_loader, 
+                         train_transform, val_transform,device, models,
+                         optimizers, scheduler, loss_func, logger, save_dir):
+    
+    lr = []
+    for epoch in range(1, config.training['stage3_num_epochs']+1):
+        logger.info(f"Epoch: {epoch}/{config.training['stage3_num_epochs']} \
+                    in primary model training (Stage 3)")
+        _ = train_primary_model_epoch(
+                epoch=epoch,
+                data_loaders=train_loaders,
+                device=device,
+                models=models,
+                optimizers=optimizers,
+                loss_func=loss_func,
+                logger=logger
+            )
+
+        save_file = os.path.join(save_dir, f'epoch{epoch}_conf_matrix.png')
+        val_metrics = validate_primary_model(
+                        epoch=epoch,
+                        data_loader=val_loader,
+                        device=device,
+                        models=models,
+                        loss_func=loss_func,
+                        class_names= config.model["class_labels"],
+                        logger=logger,
+                        save_dir=save_file
+                    )
+
+        
+        
+        logger.info(f"Current learning rate: {optimizers['primary'].param_groups[0]['lr']}")
+        scheduler.step(val_metrics['avg_loss'])
+        
+        cur_lr = optimizers['ancillary'].param_groups[0]['lr']
+        lr.append(cur_lr)
+        
+        save_checkpoint(epoch, 
+                        models["primary"],
+                        optimizers['primary'], 
+                        cur_lr, 
+                        val_metrics['acc_per_class'], 
+                        config, 
+                        train_transform, 
+                        val_transform, 
+                        save_dir)
+        
+    logger.info(f"Third stage training completed successfully")
+
+    lr_vs_epoch(config.training['num_epochs']-starting_epoch+1, lr, save_dir)
 
 
 def train(config: Config, checkpoint_path=None):
