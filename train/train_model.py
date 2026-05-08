@@ -81,6 +81,83 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
 
     return 
 
+def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_loader, 
+                         train_transform, val_transform,device, models,
+                         optimizers, schedulers, loss_func, logger, save_dir):
+    
+    prim_lrs, corr_lrs = [], []
+    for epoch in range(1, config.training['stage2_num_epochs']+1):
+
+        logger.info(f"Epoch: {epoch}/{config.training['stage2_num_epochs']} \
+                    in self correcting network training (Stage 2)")
+        
+        _, _ = train_correction_model_epoch(
+                    epoch=epoch,
+                    data_loader=train_loaders['f2_loader'],
+                    device=device,
+                    models=models,
+                    optimizers=optimizers,
+                    loss_func=loss_func,
+                    logger=logger
+                )
+
+        save_file = os.path.join(save_dir, f'epoch{epoch}_conf_matrix.png')
+        val_metrics = validate_correction_model(
+                        epoch=epoch,
+                        data_loader=val_loader,
+                        device=device,
+                        models=models,
+                        loss_func=loss_func,
+                        class_names=config.model["class_labels"],
+                        logger=logger,
+                        save_dir=save_file
+                    )
+
+        
+        
+        logger.info(f"Current learning rate for primary model: \
+                    {optimizers['primary'].param_groups[0]['lr']}")
+        logger.info(f"Current learning rate for correcting network: \
+                    {optimizers['correcting'].param_groups[0]['lr']}")
+        
+        schedulers["primary"].step(val_metrics['primary_avg_loss'])
+        schedulers["correcting"].step(val_metrics['correcting_avg_loss'])
+        
+        prim_lr = optimizers['primary'].param_groups[0]['lr']
+        corr_lr = optimizers['correcting'].param_groups[0]['lr']
+
+        prim_lrs.append(prim_lr)
+        corr_lrs.append(corr_lr)
+        
+        save_checkpoint(epoch, 
+                        models["primary"],
+                        optimizers['primary'], 
+                        prim_lr, 
+                        val_metrics['primary_acc_per_class'], 
+                        config, 
+                        train_transform, 
+                        val_transform, 
+                        save_dir,
+                        model_name="primary"
+        )
+
+        save_checkpoint(epoch, 
+                        models["correcting"],
+                        optimizers['correcting'], 
+                        corr_lr, 
+                        val_metrics['correcting_acc_per_class'], 
+                        config, 
+                        train_transform, 
+                        val_transform, 
+                        save_dir,
+                        model_name="correcting"
+        )
+        
+    logger.info(f"Second stage training completed successfully")
+
+    lr_vs_epoch(config.training['num_epochs']-starting_epoch+1, prim_lrs, save_dir)
+    lr_vs_epoch(config.training['num_epochs']-starting_epoch+1, corr_lrs, save_dir)
+
 
 
 def train(config: Config, checkpoint_path=None):
