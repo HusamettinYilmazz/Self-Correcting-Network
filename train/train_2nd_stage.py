@@ -53,7 +53,7 @@ def train_correction_model_epoch(epoch, data_loader, device, models, optimizers,
     return primary_avg_loss, correcting_avg_loss
 
 def validate_correction_model(epoch, data_loader, device, models, loss_func, class_names, logger, save_dir=None):
-    total_loss = 0.0
+    total_primary_loss, total_correcting_loss = 0.0, 0.0
     primary_total_cm, correcting_total_cm = None, None
 
     models["primary"].eval()
@@ -104,7 +104,9 @@ def validate_correction_model(epoch, data_loader, device, models, loss_func, cla
     correcting_acc_per_class = compute_per_class_accuracy(correcting_total_cm)
 
     metrics = {
-        "avg_loss": total_loss / len(data_loader),
+        "primary_avg_loss": total_primary_loss / len(data_loader),
+        "correcting_avg_loss": total_correcting_loss / len(data_loader),
+        
         "primary_iou_per_class": primary_iou_per_class,
         "primary_acc_per_class": primary_acc_per_class,
 
