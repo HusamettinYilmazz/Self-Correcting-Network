@@ -6,6 +6,7 @@ random.seed(42)
 import numpy as np
 from PIL import Image
 
+import torch
 from torch.utils.data import Dataset
 
 import xml.etree.ElementTree as ET
@@ -101,12 +102,16 @@ class VOCDataset(Dataset):
 
         img_path = os.path.join(self.data_path, "JPEGImages", f"{img_num}.jpg")
         mask_path = os.path.join(self.data_path, "SegmentationClass", f"{img_num}.png")
-        
+
         image = np.array(Image.open(img_path).convert("RGB"))
-        mask = np.array(Image.open(mask_path)) 
-        
+        mask = np.array(Image.open(mask_path))
+
         H, W = mask.shape
-        weak_mask = np.zeros((H, W), dtype=np.uint8)
+
+        num_classes = 21
+
+        # (H, W, C)
+        weak_mask = np.zeros((H, W, num_classes), dtype=np.uint8)
 
         for box in self.bbox[img_num]:
             cls_name = box.label
@@ -117,19 +122,34 @@ class VOCDataset(Dataset):
             cls_id = class_map[cls_name]
 
             xmin, ymin, xmax, ymax = box.box
+
             xmin = max(0, xmin)
             ymin = max(0, ymin)
             xmax = min(W, xmax)
             ymax = min(H, ymax)
 
-            weak_mask[ymin:ymax, xmin:xmax] = cls_id
+            weak_mask[ymin:ymax, xmin:xmax, cls_id] = 1
 
         if self.transform:
-            transformed = self.transform(image=image, masks=[mask, weak_mask])
+            transformed = self.transform(
+                image=image,
+                masks=[mask] + [weak_mask[..., c] for c in range(num_classes)]
+            )
+
             image = transformed["image"]
-            mask, weak_mask = transformed["masks"]
+
+            transformed_masks = transformed["masks"]
+
+            mask = transformed_masks[0]
+
+            weak_mask = np.stack(transformed_masks[1:], axis=0)
+
+        else:
+            weak_mask = weak_mask.transpose(2, 0, 1)
+
+        weak_mask = torch.tensor(weak_mask, dtype=torch.float32)
 
         if self.is_sup:
-            return image, mask, weak_mask
-        
+            return image, weak_mask, mask
+
         return image, weak_mask
