@@ -62,10 +62,10 @@ def train_primary_model_epoch(epoch, data_loaders, device, models,
     
     return avg_loss
 
-def validate_primary_model(epoch, data_loader, device, model, loss_func,
+def validate_primary_model(epoch, data_loader, device, models, loss_func,
                      class_names, logger, save_dir=None):
     
-    model["primary"].eval()
+    models["primary"].eval()
 
     total_loss = 0.0
     total_cm = None
@@ -76,7 +76,7 @@ def validate_primary_model(epoch, data_loader, device, model, loss_func,
             masks = masks.to(device).long()
 
 
-            outputs = model(imgs)
+            outputs = models["primary"](imgs)
 
             loss = loss_func(outputs, masks)
             total_loss += loss.item()
