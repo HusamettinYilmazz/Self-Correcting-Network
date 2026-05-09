@@ -30,9 +30,11 @@ def plot_confusion_matrix(cm, class_names, save_path=None):
 
 def compute_confusion_matrix(y_true, y_preds, class_names, ignore_index=255):
     """
-    y_preds: [B, H, W] long
+    y_preds: [B, C, H, W] long
     y_true:  [B, H, W] long
     """
+    y_preds = y_preds.argmax(dim=1)
+    
     num_classes = len(class_names)
 
     y_preds = y_preds.cpu().numpy().flatten()
