@@ -1,12 +1,12 @@
 
 experiment:
-  name: ""
+  name: "Version_1"
   version: "1.0"
   seed: 31
 
 data:
   dataset_name: "VOC-2012"
-  dataset_path: "assets"
+  dataset_path: "/kaggle/input/datasets/gopalbhattrai/pascal-voc-2012-dataset"
   train_dataset_path: "VOC2012_train_val/VOC2012_train_val"
   test_dataset_path: "VOC2012_test/VOC2012_test"
   output_path: "outputs/"
