@@ -28,6 +28,6 @@ class ASPPModule(nn.Module):
             F.relu(self.bn[1](self.atrous6(x))),
             F.relu(self.bn[2](self.atrous12(x))),
             F.relu(self.bn[3](self.atrous18(x))),
-            F.interpolate(F.relu(self.bn[4](self.global_pool(x))), size=(h, w), mode="bilinear", align_corners=False),
+            F.interpolate(F.relu(self.global_pool(x)), size=(h, w), mode="bilinear", align_corners=False),
         ]
         return self.project(torch.cat(branches, dim=1))
