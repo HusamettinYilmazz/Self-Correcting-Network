@@ -1,1 +1,1 @@
-from pascal_voc import VOCDataset
+from .pascal_voc import VOCDataset
