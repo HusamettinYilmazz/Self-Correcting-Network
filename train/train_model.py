@@ -13,7 +13,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 
-from datasets.pascal_voc import VOCDataset
+from datasets import VOCDataset
 from utils import Config, load_config, lr_vs_epoch, save_checkpoint
 from utils.logger import Logger
 
