@@ -162,7 +162,7 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
 
 def stage3_training_loop(starting_epoch, config: Config, train_loaders, val_loader, 
                          train_transform, val_transform,device, models,
-                         optimizers, scheduler, loss_func, scaler, logger, save_dir):
+                         optimizers, schedulers, loss_func, scaler, logger, save_dir):
     
     lr = []
     logger.info("Stage 3: Primary Model Training")
@@ -194,9 +194,9 @@ def stage3_training_loop(starting_epoch, config: Config, train_loaders, val_load
         
         
         logger.info(f"Current learning rate: {optimizers['primary'].param_groups[0]['lr']}")
-        scheduler.step(val_metrics['avg_loss'])
+        schedulers['primary'].step(val_metrics['avg_loss'])
         
-        cur_lr = optimizers['ancillary'].param_groups[0]['lr']
+        cur_lr = optimizers['primary'].param_groups[0]['lr']
         lr.append(cur_lr)
         
         save_checkpoint(epoch, 
