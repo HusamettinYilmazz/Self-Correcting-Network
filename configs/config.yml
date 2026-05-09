@@ -40,7 +40,7 @@ model:
 
 training:
   optimizer: "AdamW"
-  batch_size: 4
+  batch_size: 1
   stage1_num_epochs: 1
   stage2_num_epochs: 1
   stage3_num_epochs: 1
