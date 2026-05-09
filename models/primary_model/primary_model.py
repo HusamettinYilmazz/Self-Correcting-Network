@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from components import SegmentationEncoder
-from components import SegmentationDecoder
+from ..components import SegmentationEncoder
+from ..components import SegmentationDecoder
 
 class PrimarySegmentationModel(nn.Module):
     def __init__(self, num_classes: int, backbone: str = "resnet101", pretrained: bool = True):
