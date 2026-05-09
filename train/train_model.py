@@ -1,6 +1,6 @@
 import os
 import sys
-ROOT = os.getcwd()
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT)
 
 import torch
@@ -12,7 +12,7 @@ from torch.cuda.amp import autocast, GradScaler
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from models import Model
+
 from datasets.pascal_voc import VOCDataset
 from utils import Config, load_config, lr_vs_epoch, save_checkpoint
 from utils.logger import Logger
@@ -21,19 +21,19 @@ from models.primary_model import PrimarySegmentationModel
 from models.ancillary_model import AncillarySegmentationModel
 from models.self_correcting_model import SelfCorrectingNetwrokFactory
 
-from .train_1st_stage import train_ancillary_model_epoch, validate_ancillary_model
-from .train_2nd_stage import train_correction_model_epoch, validate_correction_model
-from .train_3rd_stage import train_primary_model_epoch, validate_primary_model
+from train_1st_stage import train_ancillary_model_epoch, validate_ancillary_model
+from train_2nd_stage import train_correction_model_epoch, validate_correction_model
+from train_3rd_stage import train_primary_model_epoch, validate_primary_model
 
 
 def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_loader, 
                          train_transform, val_transform,device, models,
-                         optimizers, schedulers, loss_func, logger, save_dir):
+                         optimizers, schedulers, loss_func, scaler, logger, save_dir):
     
     lrs = []
+    logger.info("Stage 1: Ancillary Model Training")
     for epoch in range(starting_epoch, config.training['stage1_num_epochs']+1):
-        logger.info(f"Epoch: {epoch}/{config.training['stage1_num_epochs']} \
-                    in ancillary model training (Stage 1)")
+        logger.info(f"Epoch: {epoch}/{config.training['stage1_num_epochs']}")
         
         _ = train_ancillary_model_epoch(
                     epoch=epoch,
@@ -42,6 +42,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
                     models=models,
                     optimizers=optimizers,
                     loss_func=loss_func,
+                    scaler=scaler,
                     logger=logger
                 )
 
@@ -83,13 +84,13 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
 
 def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_loader, 
                          train_transform, val_transform,device, models,
-                         optimizers, schedulers, loss_func, logger, save_dir):
+                         optimizers, schedulers, loss_func, scaler, logger, save_dir):
     
     prim_lrs, corr_lrs = [], []
+    logger.info("Stage 2: Primary Model ans Self Correcting Network Training")
     for epoch in range(1, config.training['stage2_num_epochs']+1):
 
-        logger.info(f"Epoch: {epoch}/{config.training['stage2_num_epochs']} \
-                    in self correcting network training (Stage 2)")
+        logger.info(f"Epoch: {epoch}/{config.training['stage2_num_epochs']}")
         
         _, _ = train_correction_model_epoch(
                     epoch=epoch,
@@ -98,6 +99,7 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
                     models=models,
                     optimizers=optimizers,
                     loss_func=loss_func,
+                    scaler=scaler,
                     logger=logger
                 )
 
@@ -160,12 +162,12 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
 
 def stage3_training_loop(starting_epoch, config: Config, train_loaders, val_loader, 
                          train_transform, val_transform,device, models,
-                         optimizers, scheduler, loss_func, logger, save_dir):
+                         optimizers, scheduler, loss_func, scaler, logger, save_dir):
     
     lr = []
+    logger.info("Stage 3: Primary Model Training")
     for epoch in range(1, config.training['stage3_num_epochs']+1):
-        logger.info(f"Epoch: {epoch}/{config.training['stage3_num_epochs']} \
-                    in primary model training (Stage 3)")
+        logger.info(f"Epoch: {epoch}/{config.training['stage3_num_epochs']}")
         _ = train_primary_model_epoch(
                 epoch=epoch,
                 data_loaders=train_loaders,
@@ -173,6 +175,7 @@ def stage3_training_loop(starting_epoch, config: Config, train_loaders, val_load
                 models=models,
                 optimizers=optimizers,
                 loss_func=loss_func,
+                scaler=scaler,
                 logger=logger
             )
 
@@ -253,10 +256,15 @@ def train(config: Config, checkpoint_path=None):
                                     is_sup= True,
                                     transform=train_transform)
     generator = torch.Generator().manual_seed(42)
-    f1_dataset, f2_dataset = random_split(fully_sup_train_dataset, 
-                                          [len(fully_sup_train_dataset)//2, ...],
-                                            generator=generator)
-    
+    f1_dataset, f2_dataset = random_split(
+        fully_sup_train_dataset,
+        [
+            len(fully_sup_train_dataset) // 2,
+            len(fully_sup_train_dataset) - len(fully_sup_train_dataset) // 2
+        ],
+        generator=generator
+    )
+
     weak_train_dataset = VOCDataset(data_path= train_val_dataset_path,
                                     data_type="train",
                                     is_sup= False,
@@ -311,17 +319,17 @@ def train(config: Config, checkpoint_path=None):
 
     optimizers = {
         "primary": AdamW(primary_model.parameters(), 
-                         lr=config.training['learning_rate'],
+                         lr=float(config.training['learning_rate']),
                          weight_decay=float(config.training['weight_decay'])
         ),
 
         "ancillary": AdamW(ancillary_model.parameters(), 
-                           lr=config.training['learning_rate'],
+                           lr=float(config.training['learning_rate']),
                            weight_decay=float(config.training['weight_decay'])
         ),
 
         "correcting": AdamW(correcting_model.parameters(), 
-                            lr=config.training['learning_rate'],
+                            lr=float(config.training['learning_rate']),
                             weight_decay=float(config.training['weight_decay'])
         ),
     }
@@ -371,7 +379,8 @@ def train(config: Config, checkpoint_path=None):
     
     stage1_training_loop(
         starting_epoch, config, train_loaders, val_loader, train_transform,
-        val_transform, device, models, optimizers, schedulers, loss_func, logger, save_dir
+        val_transform, device, models, optimizers, schedulers, loss_func, 
+        scaler, logger, save_dir
     )
 
 
@@ -379,13 +388,15 @@ def train(config: Config, checkpoint_path=None):
     ## Stage 2
     stage2_training_loop(
         starting_epoch, config, train_loaders, val_loader, train_transform, 
-        val_transform, device, models, optimizers, schedulers, loss_func, logger, save_dir
+        val_transform, device, models, optimizers, schedulers, loss_func, 
+        scaler, logger, save_dir
     )
 
     ## stage 3
     stage3_training_loop(
         starting_epoch, config, train_loaders, val_loader, train_transform, 
-        val_transform,device, models, optimizers, schedulers, loss_func, logger, save_dir
+        val_transform,device, models, optimizers, schedulers, loss_func, 
+        scaler, logger, save_dir
     )
     
     ## log that training is done successfully.
@@ -393,7 +404,7 @@ def train(config: Config, checkpoint_path=None):
 
 
 if __name__ == "__main__":
-    config = load_config(os.path.join(ROOT, "config/config.yml"))
+    config = load_config(os.path.join(ROOT, "configs/config.yml"))
     train(config)
 
 """
