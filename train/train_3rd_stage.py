@@ -81,11 +81,11 @@ def validate_primary_model(epoch, data_loader, device, model, loss_func,
             loss = loss_func(outputs, masks)
             total_loss += loss.item()
 
-            preds = outputs.argmax(dim=1)
+            # preds = outputs.argmax(dim=1)
 
             cm = compute_confusion_matrix(
                 masks,
-                preds,
+                outputs,
                 class_names,
                 ignore_index=255
             )
