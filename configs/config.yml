@@ -7,8 +7,8 @@ experiment:
 data:
   dataset_name: "VOC-2012"
   dataset_path: "assets"
-  train_dataset_path: "VOC2012_train_val"
-  test_dataset_path: "VOC2012_test"
+  train_dataset_path: "VOC2012_train_val/VOC2012_train_val"
+  test_dataset_path: "VOC2012_test/VOC2012_test"
   output_path: "outputs/"
 
 model:

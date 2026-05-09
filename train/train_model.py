@@ -1,7 +1,7 @@
 import os
 import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(ROOT)
+sys.path.insert(0, ROOT)
 
 import torch
 import torch.nn as nn
