@@ -78,7 +78,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
         
     logger.info(f"First stage training completed successfully")
 
-    lr_vs_epoch(config.training['num_epochs']-starting_epoch+1, lrs, save_dir)
+    lr_vs_epoch(config.training['stage1_num_epochs']-starting_epoch+1, lrs, save_dir)
 
     return 
 
@@ -157,8 +157,8 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
         
     logger.info(f"Second stage training completed successfully")
 
-    lr_vs_epoch(config.training['num_epochs']-starting_epoch+1, prim_lrs, save_dir)
-    lr_vs_epoch(config.training['num_epochs']-starting_epoch+1, corr_lrs, save_dir)
+    lr_vs_epoch(config.training['stage2_num_epochs']-starting_epoch+1, prim_lrs, save_dir)
+    lr_vs_epoch(config.training['stage2_num_epochs']-starting_epoch+1, corr_lrs, save_dir)
 
 def stage3_training_loop(starting_epoch, config: Config, train_loaders, val_loader, 
                          train_transform, val_transform,device, models,
@@ -211,7 +211,7 @@ def stage3_training_loop(starting_epoch, config: Config, train_loaders, val_load
         
     logger.info(f"Third stage training completed successfully")
 
-    lr_vs_epoch(config.training['num_epochs']-starting_epoch+1, lr, save_dir)
+    lr_vs_epoch(config.training['stage3_num_epochs']-starting_epoch+1, lr, save_dir)
 
 
 def train(config: Config, checkpoint_path=None):
