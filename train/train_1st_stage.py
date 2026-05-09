@@ -28,7 +28,7 @@ def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, 
 
 def validate_ancillary_model(epoch, data_loader, device, models, loss_func, class_names, logger, save_dir=None):
     total_loss = 0.0
-    all_preds, all_masks = [], []
+    total_cm = None
 
     models["ancillary"].eval()
     with torch.no_grad():
@@ -55,6 +55,8 @@ def validate_ancillary_model(epoch, data_loader, device, models, loss_func, clas
 
     metrics = {
         "avg_loss": total_loss / len(data_loader),
+        "acc_per_class": acc,
+        "iou_per_class": iou,
         "mIoU":     iou.mean().item(),
         "avg_acc":  acc.mean().item(),
     }
