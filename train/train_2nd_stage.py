@@ -62,6 +62,7 @@ def validate_correction_model(epoch, data_loader, device, models, loss_func, cla
     with torch.no_grad():
         for imgs, bboxes, masks in data_loader:
             imgs = imgs.to(device)
+            bboxes = bboxes.to(device)
             masks = masks.to(device).long()
 
             primary_outputs = models["primary"](imgs)
@@ -74,19 +75,19 @@ def validate_correction_model(epoch, data_loader, device, models, loss_func, cla
             total_primary_loss += primary_loss.item()
             total_correcting_loss += correcting_loss.item()
 
-            primary_preds = primary_outputs.argmax(dim=1)
-            correcting_preds = correcting_outputs.argmax(dim=1)
+            # primary_preds = primary_outputs.argmax(dim=1)
+            # correcting_preds = correcting_outputs.argmax(dim=1)
             
             primary_cm = compute_confusion_matrix(
                 masks,
-                primary_preds,
+                primary_outputs,
                 class_names,
                 ignore_index=255
             )
 
             correcting_cm = compute_confusion_matrix(
                 masks,
-                correcting_preds,
+                correcting_outputs,
                 class_names,
                 ignore_index=255
             )
