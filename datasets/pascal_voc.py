@@ -133,14 +133,24 @@ class VOCDataset(Dataset):
 
         H, W = mask.shape
 
-        crop_size = min(256, H, W)
-        image, mask, crop_x, crop_y = self._random_crop_with_fg(
-            image, mask,
-            crop_size=crop_size, 
-            min_fg_ratio=0.01
-        )
+        if torch.rand(1).item() < 0.3:
+            crop_size = min(256, H, W)
+            image, mask, crop_x, crop_y = self._random_crop_with_fg(
+                image, mask,
+                crop_size=crop_size, 
+                min_fg_ratio=0.01
+            )
 
-        H, W = mask.shape
+            H, W = mask.shape
+            H_crop = H
+            W_crop = W
+        else:
+            # full-image crop (no shift)
+            crop_x = 0
+            crop_y = 0
+            H_crop = H
+            W_crop = W
+            
 
         num_classes = 21
 
@@ -164,14 +174,14 @@ class VOCDataset(Dataset):
             ymax -= crop_y
 
             # check overlap BEFORE clipping
-            if xmax <= 0 or ymax <= 0 or xmin >= crop_size or ymin >= crop_size:
+            if xmax <= 0 or ymax <= 0 or xmin >= W_crop or ymin >= H_crop:
                 continue
 
             # clip to crop
             xmin = max(0, xmin)
             ymin = max(0, ymin)
-            xmax = min(crop_size, xmax)
-            ymax = min(crop_size, ymax)
+            xmax = min(W_crop, xmax)
+            ymax = min(H_crop, ymax)
 
             weak_mask[ymin:ymax, xmin:xmax, cls_id] = 1
 
