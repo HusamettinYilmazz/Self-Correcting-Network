@@ -16,6 +16,7 @@ from albumentations.pytorch import ToTensorV2
 from datasets import VOCDataset
 from utils import Config, load_config, lr_vs_epoch, save_checkpoint
 from utils.logger import Logger
+from utils.dice_loss import DiceLoss
 
 from models.primary_model import PrimarySegmentationModel
 from models.ancillary_model import AncillarySegmentationModel
@@ -28,7 +29,7 @@ from train_3rd_stage import train_primary_model_epoch, validate_primary_model
 
 def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_loader, 
                          train_transform, val_transform,device, models,
-                         optimizers, schedulers, loss_func, scaler, logger, save_dir):
+                         optimizers, schedulers, loss_funcs, scaler, logger, save_dir):
     
     lrs = []
     logger.info("Stage 1: Ancillary Model Training")
@@ -41,7 +42,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
                     device=device,
                     models=models,
                     optimizers=optimizers,
-                    loss_func=loss_func,
+                    loss_funcs=loss_funcs,
                     scaler=scaler,
                     logger=logger
                 )
@@ -52,7 +53,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
                         data_loader=val_loader,
                         device=device,
                         models=models,
-                        loss_func=loss_func,
+                        loss_func=loss_funcs,
                         class_names= config.model["class_labels"],
                         logger=logger,
                         save_dir=save_file
@@ -348,7 +349,11 @@ def train(config: Config, checkpoint_path=None):
         )
     }
 
-    loss_func = nn.CrossEntropyLoss(ignore_index=255)
+    
+    loss_funcs = {
+        "ce_loss": nn.CrossEntropyLoss(ignore_index=255),
+        "dice_loss": DiceLoss(ignore_index=255, ignore_background=True)
+    }
     scaler = GradScaler()
 
     """
@@ -379,7 +384,7 @@ def train(config: Config, checkpoint_path=None):
     
     stage1_training_loop(
         starting_epoch, config, train_loaders, val_loader, train_transform,
-        val_transform, device, models, optimizers, schedulers, loss_func, 
+        val_transform, device, models, optimizers, schedulers, loss_funcs, 
         scaler, logger, save_dir
     )
 
@@ -388,14 +393,14 @@ def train(config: Config, checkpoint_path=None):
     ## Stage 2
     stage2_training_loop(
         starting_epoch, config, train_loaders, val_loader, train_transform, 
-        val_transform, device, models, optimizers, schedulers, loss_func, 
+        val_transform, device, models, optimizers, schedulers, loss_funcs, 
         scaler, logger, save_dir
     )
 
     ## stage 3
     stage3_training_loop(
         starting_epoch, config, train_loaders, val_loader, train_transform, 
-        val_transform,device, models, optimizers, schedulers, loss_func, 
+        val_transform,device, models, optimizers, schedulers, loss_funcs, 
         scaler, logger, save_dir
     )
     
