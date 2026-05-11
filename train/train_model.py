@@ -409,7 +409,6 @@ def train(config: Config, checkpoint_path=None):
     #     scaler, logger, save_dir
     # )
     
-    ## log that training is done successfully.
     logger.info("All the 3 stages are finished successfully")
 
 
