@@ -67,15 +67,16 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
         cur_lr = optimizers['ancillary'].param_groups[0]['lr']
         lrs.append(cur_lr)
         
-        save_checkpoint(epoch, 
-                        models["ancillary"],
-                        optimizers['ancillary'], 
-                        cur_lr, 
-                        val_metrics['acc_per_class'], 
-                        config, 
-                        train_transform, 
-                        val_transform, 
-                        save_dir)
+        if epoch % 5 == 0:
+            save_checkpoint(epoch, 
+                            models["ancillary"],
+                            optimizers['ancillary'], 
+                            cur_lr, 
+                            val_metrics['acc_per_class'], 
+                            config, 
+                            train_transform, 
+                            val_transform, 
+                            save_dir)
         
     logger.info(f"First stage training completed successfully")
 
