@@ -395,19 +395,19 @@ def train(config: Config, checkpoint_path=None):
 
 
 
-    ## Stage 2
-    stage2_training_loop(
-        starting_epoch, config, train_loaders, val_loader, train_transform, 
-        val_transform, device, models, optimizers, schedulers, loss_funcs, 
-        scaler, logger, save_dir
-    )
+    # ## Stage 2
+    # stage2_training_loop(
+    #     starting_epoch, config, train_loaders, val_loader, train_transform, 
+    #     val_transform, device, models, optimizers, schedulers, loss_funcs, 
+    #     scaler, logger, save_dir
+    # )
 
-    ## stage 3
-    stage3_training_loop(
-        starting_epoch, config, train_loaders, val_loader, train_transform, 
-        val_transform,device, models, optimizers, schedulers, loss_funcs, 
-        scaler, logger, save_dir
-    )
+    # ## stage 3
+    # stage3_training_loop(
+    #     starting_epoch, config, train_loaders, val_loader, train_transform, 
+    #     val_transform,device, models, optimizers, schedulers, loss_funcs, 
+    #     scaler, logger, save_dir
+    # )
     
     ## log that training is done successfully.
     logger.info("All the 3 stages are finished successfully")
