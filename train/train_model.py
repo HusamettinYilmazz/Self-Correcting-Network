@@ -349,9 +349,13 @@ def train(config: Config, checkpoint_path=None):
         )
     }
 
-    
+    weights = torch.tensor([
+        0.2 if i == 0 else 1.0
+        for i in range(config.model["num_classes"])
+    ], dtype=torch.float32).to(device)
+
     loss_funcs = {
-        "ce_loss": nn.CrossEntropyLoss(ignore_index=255),
+        "ce_loss": nn.CrossEntropyLoss(ignore_index=255, weight=weights),
         "dice_loss": DiceLoss(ignore_index=255, ignore_background=True)
     }
     scaler = GradScaler()
