@@ -94,31 +94,6 @@ class VOCDataset(Dataset):
 
         return boxes
 
-    def _random_crop_with_fg(self, image, mask, crop_size=256, min_fg_ratio=0.01):
-
-        H, W = mask.shape
-
-        for _ in range(10):
-            y = random.randint(0, H - crop_size)
-            x = random.randint(0, W - crop_size)
-
-            crop_mask = mask[y:y+crop_size, x:x+crop_size]
-
-            fg_ratio = (crop_mask > 0).mean()
-
-            if fg_ratio >= min_fg_ratio:
-                crop_img = image[y:y+crop_size, x:x+crop_size]
-                return crop_img, crop_mask, x, y
-
-        # fallback (re-sample properly)
-        x = random.randint(0, W - crop_size)
-        y = random.randint(0, H - crop_size)
-
-        crop_img = image[y:y+crop_size, x:x+crop_size]
-        crop_mask = mask[y:y+crop_size, x:x+crop_size]
-        
-        return crop_img, crop_mask, x, y
-
     def __len__(self):
         return len(self.data)
     
@@ -132,25 +107,6 @@ class VOCDataset(Dataset):
         mask = np.array(Image.open(mask_path))
 
         H, W = mask.shape
-
-        if torch.rand(1).item() < 0.3:
-            crop_size = min(256, H, W)
-            image, mask, crop_x, crop_y = self._random_crop_with_fg(
-                image, mask,
-                crop_size=crop_size, 
-                min_fg_ratio=0.01
-            )
-
-            H, W = mask.shape
-            H_crop = H
-            W_crop = W
-        else:
-            # full-image crop (no shift)
-            crop_x = 0
-            crop_y = 0
-            H_crop = H
-            W_crop = W
-            
 
         num_classes = 21
 
@@ -167,21 +123,10 @@ class VOCDataset(Dataset):
 
             xmin, ymin, xmax, ymax = box.box
 
-            # shift to crop coordinate system
-            xmin -= crop_x
-            xmax -= crop_x
-            ymin -= crop_y
-            ymax -= crop_y
-
-            # check overlap BEFORE clipping
-            if xmax <= 0 or ymax <= 0 or xmin >= W_crop or ymin >= H_crop:
-                continue
-
-            # clip to crop
             xmin = max(0, xmin)
             ymin = max(0, ymin)
-            xmax = min(W_crop, xmax)
-            ymax = min(H_crop, ymax)
+            xmax = min(W, xmax)
+            ymax = min(H, ymax)
 
             weak_mask[ymin:ymax, xmin:xmax, cls_id] = 1
 
