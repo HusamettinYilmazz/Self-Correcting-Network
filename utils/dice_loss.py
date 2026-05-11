@@ -21,27 +21,26 @@ class DiceLoss(nn.Module):
         # probabilities
         probs = torch.softmax(logits, dim=1)
 
-        # valid pixels only
+        # valid pixels mask
         valid_mask = (targets != self.ignore_index)
 
-        # replace ignored pixels temporarily
+        # replace ignore_index temporarily
         safe_targets = targets.clone()
         safe_targets[~valid_mask] = 0
 
-        # one-hot
+        # one-hot encode targets
         targets_one_hot = F.one_hot(
             safe_targets,
             num_classes=num_classes
         ).permute(0, 3, 1, 2).float()
 
-        # expand valid mask to channels
+        # apply valid mask
         valid_mask = valid_mask.unsqueeze(1)
 
-        # remove ignored pixels
         probs = probs * valid_mask
         targets_one_hot = targets_one_hot * valid_mask
 
-        # flatten
+        # flatten spatial dims
         probs = probs.reshape(probs.shape[0], probs.shape[1], -1)
         targets_one_hot = targets_one_hot.reshape(
             targets_one_hot.shape[0],
@@ -49,7 +48,12 @@ class DiceLoss(nn.Module):
             -1
         )
 
-        # intersection and union
+        # remove background if needed
+        if self.ignore_background:
+            probs = probs[:, 1:]
+            targets_one_hot = targets_one_hot[:, 1:]
+
+        # intersection + union
         intersection = (probs * targets_one_hot).sum(dim=2)
 
         union = probs.sum(dim=2) + targets_one_hot.sum(dim=2)
@@ -58,9 +62,16 @@ class DiceLoss(nn.Module):
             union + self.smooth
         )
 
-        # optionally ignore background
-        if self.ignore_background:
-            dice = dice[:, 1:]
+        # ignore classes absent from GT
+        target_sum = targets_one_hot.sum(dim=2)
+
+        valid_classes = target_sum > 0
+
+        dice = dice[valid_classes]
+
+        # fallback safety
+        if dice.numel() == 0:
+            return logits.new_tensor(0.0)
 
         dice = dice.mean()
 
