@@ -40,9 +40,9 @@ model:
 
 training:
   optimizer: "AdamW"
-  batch_size: 2
-  stage1_num_epochs: 15
+  batch_size: 4
+  stage1_num_epochs: 50
   stage2_num_epochs: 15
   stage3_num_epochs: 15
-  learning_rate: 7e-3
-  weight_decay: 1
+  learning_rate: 1e-3
+  weight_decay: 0
