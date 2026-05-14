@@ -66,12 +66,12 @@ def validate_ancillary_model(epoch, data_loader, device, models, loss_funcs, cla
         "avg_loss": total_loss / len(data_loader),
         "acc_per_class": acc,
         "iou_per_class": iou,
-        "mIoU":     iou.mean().item(),
-        "avg_acc":  acc.mean().item(),
+        "mIoU":     iou[1:].mean().item(),
+        "avg_acc":  acc[1:].mean().item(),
     }
 
     if save_dir is not None:
-        plot_confusion_matrix(total_cm, class_names, save_path=save_dir)
+        plot_confusion_matrix(total_cm[1:, 1:], class_names[1:], save_path=save_dir)
 
     logger.info(f"Epoch: {epoch} | Stage 1 validation")
     logger.info(metrics)
