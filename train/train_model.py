@@ -53,7 +53,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
                         data_loader=val_loader,
                         device=device,
                         models=models,
-                        loss_func=loss_funcs,
+                        loss_funcs=loss_funcs,
                         class_names= config.model["class_labels"],
                         logger=logger,
                         save_dir=save_file
