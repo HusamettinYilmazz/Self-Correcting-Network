@@ -67,7 +67,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
         cur_lr = optimizers['ancillary'].param_groups[0]['lr']
         lrs.append(cur_lr)
         
-        if epoch % 5 == 0:
+        if epoch % 2 == 0:
             save_checkpoint(epoch, 
                             models["ancillary"],
                             optimizers['ancillary'], 
