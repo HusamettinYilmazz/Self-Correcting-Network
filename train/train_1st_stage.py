@@ -22,13 +22,19 @@ def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, 
         schedulers["ancillary"].step()
         total_loss += loss.item()
 
-        preds.extend(outputs)
-        targets.extend(masks)
+        pred_classes = torch.argmax(outputs, dim=1)
+        preds.extend(pred_classes.detach().cpu())
+        targets.extend(masks.detach().cpu())
         if batch_idx % 10 == 0:
-            b_f1 = boundary_f1(outputs, masks)
+            b_f1 = boundary_f1(
+                pred_classes.detach().cpu(),
+                masks.detach().cpu()
+            )
             logger.info(f"TRAIN: Epoch:{epoch} at Batch:{batch_idx}/{len(data_loader)} CrossEntropy Loss:{ce_loss.item():.3f} | Dice Loss:{dice_loss.item():.3f} | Loss:{loss.item():.3f} | Boundry F1{b_f1.item():.3f}")
     
     avg_loss = total_loss/ len(data_loader)
+    preds = torch.stack(preds)
+    targets = torch.stack(targets)
     imbalance_ind = imbalance_indicator(preds, targets, 21)
     logger.info(f"Imblance Indicator: {imbalance_ind}")
     logger.info(f"ANCILLARY MODEL Epoch:{epoch} average train Loss:{avg_loss:.3f}")
@@ -40,7 +46,7 @@ def validate_ancillary_model(epoch, data_loader, device, models, loss_funcs, cla
     total_ce_loss = 0.0
     total_dice_loss = 0.0
     total_cm = None
-    predictions, targets = [], []
+    preds_list, targets_list = [], []
 
     models["ancillary"].eval()
     with torch.no_grad():
@@ -49,30 +55,36 @@ def validate_ancillary_model(epoch, data_loader, device, models, loss_funcs, cla
             bboxes = bboxes.to(device)
             masks = masks.to(device).long()
 
-            preds = models["ancillary"](imgs, bboxes)
+            outputs = models["ancillary"](imgs, bboxes)
 
-            ce_loss = loss_funcs["ce_loss"](preds, masks)
+            ce_loss = loss_funcs["ce_loss"](outputs, masks)
             total_ce_loss += ce_loss.item()
-            dice_loss = loss_funcs["dice_loss"](preds, masks)
+            dice_loss = loss_funcs["dice_loss"](outputs, masks)
             total_dice_loss += dice_loss.item()
             loss = ce_loss + dice_loss
             total_loss += loss.item()
 
             cm = compute_confusion_matrix(
                 masks,
-                preds,
+                outputs,
                 class_names,
                 ignore_index=255
             )
 
             total_cm = cm if total_cm is None else total_cm + cm
-            predictions.extend(preds)
-            targets.extend(masks)
+            # predictions
+            pred_classes = torch.argmax(outputs, dim=1)
+
+            preds_list.append(pred_classes.cpu())
+            targets_list.append(masks.cpu())
 
     iou = compute_iou_per_class(total_cm)
     acc = compute_per_class_accuracy(total_cm)
-    b_f1 = boundary_f1(predictions, targets)
-    imbalance_ind = imbalance_indicator(predictions, targets, 21)    
+
+    preds = torch.stack(preds_list)
+    targets = torch.stack(targets_list)
+    b_f1 = boundary_f1(preds, targets)
+    imbalance_ind = imbalance_indicator(preds, targets, 21)  
 
     metrics = {
         "avg_ce_loss": total_ce_loss / len(data_loader),
