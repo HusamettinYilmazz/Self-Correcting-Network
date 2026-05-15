@@ -30,11 +30,11 @@ def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, 
                 pred_classes.detach().cpu(),
                 masks.detach().cpu()
             )
-            logger.info(f"TRAIN: Epoch:{epoch} at Batch:{batch_idx}/{len(data_loader)} CrossEntropy Loss:{ce_loss.item():.3f} | Dice Loss:{dice_loss.item():.3f} | Loss:{loss.item():.3f} | Boundry F1{b_f1.item():.3f}")
+            logger.info(f"TRAIN: Epoch:{epoch} at Batch:{batch_idx}/{len(data_loader)} CrossEntropy Loss:{ce_loss.item():.3f} | Dice Loss:{dice_loss.item():.3f} | Loss:{loss.item():.3f} | Boundry F1: {b_f1.item():.3f}")
     
     avg_loss = total_loss/ len(data_loader)
-    preds = torch.stack(preds)
-    targets = torch.stack(targets)
+    preds = torch.cat(preds, dim=0)
+    targets = torch.cat(targets, dim=0)
     imbalance_ind = imbalance_indicator(preds, targets, 21)
     logger.info(f"Imblance Indicator: {imbalance_ind}")
     logger.info(f"ANCILLARY MODEL Epoch:{epoch} average train Loss:{avg_loss:.3f}")
@@ -81,8 +81,8 @@ def validate_ancillary_model(epoch, data_loader, device, models, loss_funcs, cla
     iou = compute_iou_per_class(total_cm)
     acc = compute_per_class_accuracy(total_cm)
 
-    preds = torch.stack(preds_list)
-    targets = torch.stack(targets_list)
+    preds = torch.cat(preds_list, dim=0)
+    targets = torch.cat(targets_list, dim=0)
     b_f1 = boundary_f1(preds, targets)
     imbalance_ind = imbalance_indicator(preds, targets, 21)  
 
