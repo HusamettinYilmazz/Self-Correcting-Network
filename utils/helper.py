@@ -4,7 +4,7 @@ import pickle
 
 import matplotlib.pyplot as plt
 import torch
-import torch.nn.functional as F
+
 class Config:
     def __init__(self, config_dict):
         self.experiment = config_dict.get("experiment", {})

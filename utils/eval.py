@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 import torch
-
+import torch.nn.functional as F
 
 def plot_confusion_matrix(cm, class_names, save_path=None):
     cm_normalized = cm.numpy().astype(float) / (cm.numpy().sum(axis=1, keepdims=True) + 1e-10)
