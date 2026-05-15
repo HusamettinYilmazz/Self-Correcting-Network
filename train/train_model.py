@@ -223,17 +223,22 @@ def train(config: Config, checkpoint_path=None):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     train_transform = A.Compose([
-        A.Resize(512, 512),
-        A.OneOf([
-            A.GaussianBlur(blur_limit=(3, 7)),
-            A.ColorJitter(brightness=0.2),
-            A.RandomBrightnessContrast(),
-            A.GaussNoise()
-        ], p=0.5),
-        A.OneOf([
-            A.HorizontalFlip(),
-            A.VerticalFlip(),
-        ], p=0.05),
+        A.RandomScale(scale_limit=0.5, p=1.0),
+
+        A.PadIfNeeded(min_height=520, min_width=520),
+
+        A.RandomCrop(512, 512),
+
+        A.HorizontalFlip(p=0.5),
+
+        A.ColorJitter(
+            brightness=0.2,
+            contrast=0.2,
+            saturation=0.2,
+            hue=0.1,
+            p=0.5
+        ),
+
         A.Normalize(
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225]
