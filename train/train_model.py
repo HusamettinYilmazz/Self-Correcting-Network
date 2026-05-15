@@ -43,7 +43,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
                     models=models,
                     optimizers=optimizers,
                     loss_funcs=loss_funcs,
-                    scaler=scaler,
+                    schedulers=schedulers,
                     logger=logger
                 )
 
@@ -62,7 +62,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
         
         
         logger.info(f"Current learning rate: {optimizers['ancillary'].param_groups[0]['lr']}")
-        schedulers["ancillary"].step(val_metrics['avg_loss'])
+        # schedulers["ancillary"].step(val_metrics['avg_loss'])
         
         cur_lr = optimizers['ancillary'].param_groups[0]['lr']
         lrs.append(cur_lr)

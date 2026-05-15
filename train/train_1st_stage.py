@@ -2,7 +2,7 @@ import torch
 from utils.eval import compute_confusion_matrix, plot_confusion_matrix
 from utils.eval import compute_per_class_accuracy,  compute_iou_per_class
 
-def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, loss_funcs, scaler, logger):
+def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, loss_funcs, schedulers, logger):
     total_loss = 0.0
     models["ancillary"].train()
     for batch_idx, (imgs, bboxs, masks) in enumerate(data_loader):
@@ -16,6 +16,7 @@ def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, 
 
         loss.backward()
         optimizers["ancillary"].step()
+        schedulers["ancillary"].step()
         total_loss += loss.item()
 
         if batch_idx % 10 == 0:
