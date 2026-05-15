@@ -78,7 +78,7 @@ def boundary_f1(pred, target):
     recall    = tp / (tp + fn + 1e-6)
 
     bf1 = 2 * precision * recall / (precision + recall + 1e-6)
-    return bf1.item()
+    return bf1
 
 def class_distribution(preds, num_classes):
     # preds: [B,H,W]

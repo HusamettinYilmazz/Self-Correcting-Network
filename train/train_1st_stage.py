@@ -1,9 +1,12 @@
 import torch
 from utils.eval import compute_confusion_matrix, plot_confusion_matrix
 from utils.eval import compute_per_class_accuracy,  compute_iou_per_class
+from utils.eval import boundary_f1, imbalance_indicator
 
 def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, loss_funcs, schedulers, logger):
     total_loss = 0.0
+    preds, targets = [], []
+
     models["ancillary"].train()
     for batch_idx, (imgs, bboxs, masks) in enumerate(data_loader):
         imgs, bboxs, masks = imgs.to(device), bboxs.to(device), masks.to(device).long()
@@ -19,10 +22,15 @@ def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, 
         schedulers["ancillary"].step()
         total_loss += loss.item()
 
+        preds.extend(outputs)
+        targets.extend(masks)
         if batch_idx % 10 == 0:
-            logger.info(f"TRAIN: Epoch:{epoch} at Batch:{batch_idx}/{len(data_loader)} CrossEntropy Loss:{ce_loss.item():.3f} | Dice Loss:{dice_loss.item():.3f} | Loss:{loss.item():.3f}")
+            b_f1 = boundary_f1(outputs, masks)
+            logger.info(f"TRAIN: Epoch:{epoch} at Batch:{batch_idx}/{len(data_loader)} CrossEntropy Loss:{ce_loss.item():.3f} | Dice Loss:{dice_loss.item():.3f} | Loss:{loss.item():.3f} | Boundry F1{b_f1.item():.3f}")
     
     avg_loss = total_loss/ len(data_loader)
+    imbalance_ind = imbalance_indicator(preds, targets, 21)
+    logger.info(f"Imblance Indicator: {imbalance_ind}")
     logger.info(f"ANCILLARY MODEL Epoch:{epoch} average train Loss:{avg_loss:.3f}")
     
     return avg_loss
@@ -32,6 +40,7 @@ def validate_ancillary_model(epoch, data_loader, device, models, loss_funcs, cla
     total_ce_loss = 0.0
     total_dice_loss = 0.0
     total_cm = None
+    predictions, targets = [], []
 
     models["ancillary"].eval()
     with torch.no_grad():
@@ -57,9 +66,13 @@ def validate_ancillary_model(epoch, data_loader, device, models, loss_funcs, cla
             )
 
             total_cm = cm if total_cm is None else total_cm + cm
+            predictions.extend(preds)
+            targets.extend(masks)
 
     iou = compute_iou_per_class(total_cm)
     acc = compute_per_class_accuracy(total_cm)
+    b_f1 = boundary_f1(predictions, targets)
+    imbalance_ind = imbalance_indicator(predictions, targets, 21)    
 
     metrics = {
         "avg_ce_loss": total_ce_loss / len(data_loader),
@@ -69,6 +82,8 @@ def validate_ancillary_model(epoch, data_loader, device, models, loss_funcs, cla
         "iou_per_class": iou,
         "mIoU":     iou[1:].mean().item(),
         "avg_acc":  acc[1:].mean().item(),
+        "Boundry F1": b_f1.item(),
+        "Class Imbalancing Indicator": imbalance_ind,
     }
 
     if save_dir is not None:
