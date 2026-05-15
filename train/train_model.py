@@ -340,14 +340,19 @@ def train(config: Config, checkpoint_path=None):
                             weight_decay=float(config.training['weight_decay'])
         ),
     }
-
+    
+    total_epochs = config.training['stage1_num_epochs']
+    steps_per_epoch = len(f1_loader)
+    total_steps = total_epochs * steps_per_epoch
+    
     schedulers = {
         "primary": lr_scheduler.ReduceLROnPlateau(
             optimizer=optimizers["primary"], mode='min', factor=0.1, patience=2
         ),
 
-        "ancillary": lr_scheduler.ReduceLROnPlateau(
-            optimizer=optimizers["ancillary"], mode='min', factor=0.1, patience=2
+        "ancillary": lr_scheduler.LambdaLR(
+            optimizers['ancillary'],
+            lr_lambda=lambda it: (1 - it / total_steps) ** 0.9
         ),
 
         "correcting": lr_scheduler.ReduceLROnPlateau(
