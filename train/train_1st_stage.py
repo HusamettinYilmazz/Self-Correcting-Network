@@ -15,7 +15,7 @@ def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, 
 
         ce_loss = loss_funcs["ce_loss"](outputs, masks)
         dice_loss = loss_funcs["dice_loss"](outputs, masks)
-        loss = ce_loss + dice_loss
+        loss = ce_loss + 0.5 * dice_loss
 
         loss.backward()
         optimizers["ancillary"].step()
