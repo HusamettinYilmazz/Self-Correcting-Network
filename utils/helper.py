@@ -49,3 +49,59 @@ def lr_vs_epoch(num_epochs, lrs, save_dir):
     plt.title("Learning Rate vs. Epoch")
     plt.grid(True)
     plt.savefig(os.path.join(save_dir, 'epoch_vs_lr.png'), bbox_inches='tight')
+
+def compute_class_distribution(masks, class_names, ignore_index=255):
+    """
+    Computes per-class pixel distribution.
+
+    Args:
+        masks:
+            list of tensors with shape [B, H, W] or [H, W]
+
+        class_names:
+            list of class names
+
+        ignore_index:
+            ignored label value
+
+    Returns:
+        dict:
+            {
+                class_name: percentage
+            }
+    """
+
+    import torch
+
+    num_classes = len(class_names)
+
+    class_counts = torch.zeros(num_classes, dtype=torch.long)
+
+    for mask in masks:
+
+        # Convert [H, W] -> [1, H, W]
+        if mask.dim() == 2:
+            mask = mask.unsqueeze(0)
+
+        valid_mask = mask != ignore_index
+        valid_pixels = mask[valid_mask]
+
+        counts = torch.bincount(
+            valid_pixels.view(-1),
+            minlength=num_classes
+        )
+
+        class_counts += counts.cpu()
+
+    total_pixels = class_counts.sum().float()
+
+    percentages = (
+        class_counts.float() / (total_pixels + 1e-10)
+    ) * 100
+
+    distribution = {
+        class_name: round(percentages[idx].item(), 4)
+        for idx, class_name in enumerate(class_names)
+    }
+
+    return distribution
