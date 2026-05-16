@@ -55,15 +55,12 @@ def compute_per_class_accuracy(cm):
     return (cm.diag() / (cm.sum(dim=1) + 1e-10)).cpu().numpy()
 
 def get_boundaries(mask):
-    # mask: [B, H, W]
-    kernel = torch.ones((1, 1, 3, 3), device=mask.device)
-
+    # mask: [B,H,W] long or bool
     mask = mask.unsqueeze(1).float()  # [B,1,H,W]
 
-    dilated = F.conv2d(mask, kernel, padding=1)
-    eroded  = -F.conv2d(-mask, kernel, padding=1)
+    dilated = F.max_pool2d(mask, kernel_size=3, stride=1, padding=1)
 
-    boundary = (dilated - eroded) > 0
+    boundary = (dilated - mask) > 0
     return boundary.squeeze(1)
 
 def boundary_f1(pred, target):
@@ -90,7 +87,11 @@ def class_distribution(preds, num_classes):
     return hist / hist.sum()
 
 def imbalance_indicator(preds, targets, num_classes):
-    pred_dist = class_distribution(preds, num_classes)
-    gt_dist   = class_distribution(targets, num_classes)
+    pred = class_distribution(preds, num_classes)
+    gt   = class_distribution(targets, num_classes)
 
-    return (pred_dist - gt_dist).abs().mean().item()
+    return F.kl_div(
+        (pred + 1e-8).log(),
+        gt,
+        reduction="batchmean"
+    ).item()
