@@ -33,6 +33,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
     
     lrs = []
     logger.info("Stage 1: Ancillary Model Training")
+    logger.info(f"Stage 1 training dataset size: {len(train_loaders['f1_loader'])*config.training['batch_size']}")
     for epoch in range(starting_epoch, config.training['stage1_num_epochs']+1):
         logger.info(f"Epoch: {epoch}/{config.training['stage1_num_epochs']}")
         
@@ -261,6 +262,7 @@ def train(config: Config, checkpoint_path=None):
     fully_sup_train_dataset = VOCDataset(data_path= train_val_dataset_path,
                                     data_type="train",
                                     is_sup= True,
+                                    split_ratio=0.5,
                                     transform=train_transform)
     generator = torch.Generator().manual_seed(42)
     f1_dataset, f2_dataset = random_split(
