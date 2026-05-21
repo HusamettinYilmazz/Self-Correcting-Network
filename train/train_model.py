@@ -286,19 +286,23 @@ def train(config: Config, checkpoint_path=None):
     
     fully_sup_train_loader = DataLoader(dataset=fully_sup_train_dataset, 
                                         batch_size=config.training['batch_size'],
-                                        shuffle= True, pin_memory= True)
+                                        shuffle= True, pin_memory= True,
+                                        num_workers=4)
     
     f1_loader = DataLoader(dataset=f1_dataset, 
                            batch_size=config.training['batch_size'],
-                           shuffle= True, pin_memory= True)
+                           shuffle= True, pin_memory= True,
+                           num_workers=4)
     
     f2_loader = DataLoader(dataset=f2_dataset, 
                            batch_size=config.training['batch_size'],
-                           shuffle= True, pin_memory= True)
+                           shuffle= True, pin_memory= True,
+                           num_workers=4)
     
     weak_train_loader = DataLoader(dataset=weak_train_dataset, 
                                    batch_size=config.training['batch_size'],
-                                   shuffle= True, pin_memory= True)
+                                   shuffle= True, pin_memory= True,
+                                   num_workers=4)
     train_loaders = {
         "f_loader": fully_sup_train_loader,
         "w_loader": weak_train_loader,
@@ -307,19 +311,29 @@ def train(config: Config, checkpoint_path=None):
     }
     val_loader = DataLoader(dataset=val_dataset, 
                             batch_size=config.training['batch_size'], 
-                            shuffle= True, pin_memory= True)
+                            shuffle= True, pin_memory= True,
+                            num_workers=4)
 
     primary_model = PrimarySegmentationModel(
-        num_classes=config.model["num_classes"]).to(device)
+        num_classes=config.model["num_classes"]
+    )
     
+    ## For stage 1 traning:
     ancillary_model = AncillarySegmentationModel(
-        num_classes=config.model["num_classes"]).to(device)
+        num_classes=config.model["num_classes"]
+    )
+    # ancillary_model = AncillarySegmentationModel(
+    #     num_classes=config.model["num_classes"]).to(device)
     
     correcting_model = SelfCorrectingNetwrokFactory().build_correction_module(
         variant = "conv_correction", 
         num_classes=config.model["num_classes"]
-    ).to(device)
+    )
 
+    if torch.cuda.device_count() > 1:
+        ancillary_model = torch.nn.DataParallel(ancillary_model)
+
+    ancillary_model = ancillary_model.to(device)
     models = {
         "primary": primary_model,
         "ancillary": ancillary_model,
@@ -373,24 +387,13 @@ def train(config: Config, checkpoint_path=None):
     }
     scaler = GradScaler()
 
-    """
-    # if checkpoint_path:
-    #     checkpoint = torch.load(checkpoint_path, map_location=device)
-    #     starting_epoch = checkpoint['epoch'] + 1
-    #     model.load_state_dict(checkpoint['model_state_dict'])
-    #     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    #     optimizer.param_groups[0]['lr'] = checkpoint['learning_rate']
-
-    # else:
-    #     starting_epoch = 1
-    """
-
     starting_epoch = 1
     save_dir = os.path.join(ROOT, config.data['output_path'], config.experiment['name'], config.experiment['version'])
     os.makedirs(save_dir, exist_ok=True)
 
     logger = Logger(save_dir)
     logger.info(f"Starting the experiment: {config.experiment['name']} {config.experiment['version']}")
+    logger.info(f"Using {torch.cuda.device_count()} GPUs")
     logger.info(f"Using device: {device}")
     logger.info(f"Fully Supervised Training dataset size: {len(fully_sup_train_dataset)}")
     logger.info(f"Weak Training dataset size: {len(weak_train_dataset)}")
