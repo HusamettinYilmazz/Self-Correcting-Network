@@ -387,7 +387,21 @@ def train(config: Config, checkpoint_path=None):
     }
     scaler = GradScaler()
 
-    starting_epoch = 1
+    if checkpoint_path:
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        starting_epoch = checkpoint['epoch'] + 1
+        state_dict = checkpoint['model_state_dict']
+        if hasattr(models['ancillary'], "module"):
+            models['ancillary'].module.load_state_dict(state_dict)
+        else:
+            models['ancillary'].load_state_dict(state_dict)
+        
+        optimizers['ancillary'].load_state_dict(checkpoint['optimizer_state_dict'])
+        optimizers['ancillary'].param_groups[0]['lr'] = checkpoint['learning_rate']
+
+    else:
+        starting_epoch = 1
+    
     save_dir = os.path.join(ROOT, config.data['output_path'], config.experiment['name'], config.experiment['version'])
     os.makedirs(save_dir, exist_ok=True)
 
