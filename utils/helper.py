@@ -27,9 +27,10 @@ def save_checkpoint(epoch, model, optimizer, cur_lr, val_acc, config,
     
     checkpoint_path = os.path.join(save_dir, f'epoch{epoch}_{model_name}.pth')
 
+    state_dict = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
     torch.save({
             'epoch': epoch,
-            'model_state_dict': model.state_dict(),
+            'model_state_dict': state_dict,
             'optimizer_state_dict': optimizer.state_dict(),
             'learning_rate': cur_lr,
             'val_accuracy': val_acc,
