@@ -69,7 +69,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
         cur_lr = optimizers['ancillary'].param_groups[0]['lr']
         lrs.append(cur_lr)
         
-        if epoch % 2 == 0:
+        if epoch % 30 == 0:
             save_checkpoint(epoch, 
                             models["ancillary"],
                             optimizers['ancillary'], 
@@ -263,7 +263,7 @@ def train(config: Config, checkpoint_path=None):
     fully_sup_train_dataset = VOCDataset(data_path= train_val_dataset_path,
                                     data_type="train",
                                     is_sup= True,
-                                    split_ratio=0.5,
+                                    split_ratio=1.0,
                                     transform=train_transform)
     generator = torch.Generator().manual_seed(42)
     f1_dataset, f2_dataset = random_split(
