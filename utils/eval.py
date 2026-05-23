@@ -55,13 +55,20 @@ def compute_per_class_accuracy(cm):
     return (cm.diag() / (cm.sum(dim=1) + 1e-10)).cpu().numpy()
 
 def get_boundaries(mask):
-    # mask: [B,H,W] long or bool
-    mask = mask.unsqueeze(1).float()  # [B,1,H,W]
+    """
+    mask: [B,H,W] long
+    returns: [B,H,W] bool
+    """
 
-    dilated = F.max_pool2d(mask, kernel_size=3, stride=1, padding=1)
+    boundary = torch.zeros_like(mask, dtype=torch.bool)
 
-    boundary = (dilated - mask) > 0
-    return boundary.squeeze(1)
+    boundary[:, :, 1:] |= mask[:, :, 1:] != mask[:, :, :-1]
+    boundary[:, :, :-1] |= mask[:, :, 1:] != mask[:, :, :-1]
+
+    boundary[:, 1:, :] |= mask[:, 1:, :] != mask[:, :-1, :]
+    boundary[:, :-1, :] |= mask[:, 1:, :] != mask[:, :-1, :]
+
+    return boundary
 
 def boundary_f1(pred, target):
     pred_b = get_boundaries(pred)
