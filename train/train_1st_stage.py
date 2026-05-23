@@ -3,29 +3,36 @@ from utils.eval import compute_confusion_matrix, plot_confusion_matrix
 from utils.eval import compute_per_class_accuracy,  compute_iou_per_class
 from utils.eval import boundary_f1, imbalance_indicator
 
-def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, loss_funcs, schedulers, logger):
+def train_ancillary_model_epoch(epoch, data_loader, device, models, optimizers, loss_funcs, schedulers, accum_steps, logger):
     total_loss = 0.0
     preds, targets = [], []
 
+    optimizers["ancillary"].zero_grad()
     models["ancillary"].train()
     for batch_idx, (imgs, bboxs, masks) in enumerate(data_loader):
         imgs, bboxs, masks = imgs.to(device), bboxs.to(device), masks.to(device).long()
-        optimizers["ancillary"].zero_grad()
+        
         outputs = models["ancillary"](imgs, bboxs)
 
         ce_loss = loss_funcs["ce_loss"](outputs, masks)
         dice_loss = loss_funcs["dice_loss"](outputs, masks)
         loss = ce_loss + 0.5 * dice_loss
-
-        loss.backward()
-        optimizers["ancillary"].step()
-        schedulers["ancillary"].step()
         total_loss += loss.item()
+
+        acc_loss = loss / accum_steps
+        acc_loss.backward()
+        
+
+        if (batch_idx+1) % accum_steps == 0 or (batch_idx+1) == len(data_loader):
+            optimizers["ancillary"].step()
+            optimizers["ancillary"].zero_grad()
+            schedulers["ancillary"].step()
+        
 
         pred_classes = torch.argmax(outputs, dim=1)
         preds.extend(pred_classes.detach().cpu())
         targets.extend(masks.detach().cpu())
-        if batch_idx % 10 == 0:
+        if batch_idx % 20 == 0:
             b_f1 = boundary_f1(
                 pred_classes.detach().cpu(),
                 masks.detach().cpu()

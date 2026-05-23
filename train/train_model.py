@@ -45,6 +45,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
                     optimizers=optimizers,
                     loss_funcs=loss_funcs,
                     schedulers=schedulers,
+                    accum_steps= config.training['grad_acc_steps'],
                     logger=logger
                 )
 
