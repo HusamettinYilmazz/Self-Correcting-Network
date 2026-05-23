@@ -1,7 +1,7 @@
 
 experiment:
   name: "Version_1"
-  version: "1.0"
+  version: "3.0"
   seed: 31
 
 data:
@@ -40,10 +40,10 @@ model:
 
 training:
   optimizer: "AdamW"
-  batch_size: 4
+  batch_size: 8
   grad_acc_steps: 2
-  stage1_num_epochs: 15
+  stage1_num_epochs: 450
   stage2_num_epochs: 15
   stage3_num_epochs: 15
   learning_rate: 1e-3
-  weight_decay: 0
+  weight_decay: 1e-4
