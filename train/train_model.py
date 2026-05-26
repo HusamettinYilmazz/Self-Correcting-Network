@@ -333,7 +333,7 @@ def train(config: Config, checkpoint_path=None):
         ),
         
         "correcting": SelfCorrectingNetwrokFactory().build_correction_module(
-            variant = "conv_correction", 
+            variant = config.model['correcting_variant'], 
             num_classes=config.model["num_classes"]
         )
     }
