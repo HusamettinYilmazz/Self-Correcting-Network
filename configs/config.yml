@@ -39,6 +39,7 @@ model:
     - tvmonitor
 
 training:
+  training_stage: 2
   optimizer: "AdamW"
   batch_size: 8
   grad_acc_steps: 2
