@@ -441,10 +441,11 @@ def train(config: Config, checkpoint_path=None):
         if config.training['training_stage'] == 1:
             if config.training['continue_traning']:
                 ancillary_state = load_checkpoint(
-                    checkpoint_path['ancillary'], 
-                    models['ancillary'],
-                    optimizers['ancillary'], 
-                    schedulers['ancillary']
+                    checkpoint_path= checkpoint_path['ancillary'], 
+                    model= models['ancillary'],
+                    optimizer= optimizers['ancillary'], 
+                    scheduler= schedulers['ancillary'], 
+                    device= device
                 )
 
                 starting_epoch = ancillary_state['epoch'] + 1
@@ -457,20 +458,22 @@ def train(config: Config, checkpoint_path=None):
         elif config.training['training_stage'] == 2:
             if config.training['continue_traning']:
                 primary_state = load_checkpoint(
-                    checkpoint_path['primary'], 
-                    models['primary'],
-                    optimizers['primary'], 
-                    schedulers['primary']
+                    checkpoint_path= checkpoint_path['primary'], 
+                    model= models['primary'],
+                    optimizer= optimizers['primary'], 
+                    scheduler= schedulers['primary'], 
+                    device= device
                 )
                 models['primary'] = primary_state['model']
                 optimizers['primary'] = primary_state['optimizer']
                 schedulers['primary'] = primary_state['scheduler']
 
                 correcting_state = load_checkpoint(
-                    checkpoint_path['correcting'], 
-                    models['correcting'],
-                    optimizers['correcting'], 
-                    schedulers['correcting']
+                    checkpoint_path= checkpoint_path['correcting'], 
+                    model= models['correcting'],
+                    optimizer= optimizers['correcting'], 
+                    scheduler= schedulers['correcting'], 
+                    device= device
                 )
                 
                 models['correcting'] = correcting_state['model']
@@ -483,19 +486,21 @@ def train(config: Config, checkpoint_path=None):
                 starting_epoch = 1
 
             models['ancillary'], _, _ = load_checkpoint(
-                checkpoint_path['ancillary'], 
-                models['ancillary'],
-                optimizers['ancillary'], 
-                schedulers['ancillary']
+                checkpoint_path= checkpoint_path['ancillary'], 
+                model= models['ancillary'],
+                optimizer= optimizers['ancillary'], 
+                scheduler= schedulers['ancillary'], 
+                device= device
             )
 
         elif config.training['training_stage'] == 3:
             if config.training['continue_traning']:
                 primary_state = load_checkpoint(
-                    checkpoint_path['primary'], 
-                    models['primary'],
-                    optimizers['primary'], 
-                    schedulers['primary']
+                    checkpoint_path= checkpoint_path['primary'], 
+                    model= models['primary'],
+                    optimizer= optimizers['primary'], 
+                    scheduler= schedulers['primary'], 
+                    device= device
                 )
                 starting_epoch = primary_state['epoch'] + 1
                 models['primary'] = primary_state['model']
@@ -504,25 +509,28 @@ def train(config: Config, checkpoint_path=None):
 
             else:
                 models['primary'], _, _ = load_checkpoint(
-                    checkpoint_path['primary'], 
-                    models['primary'],
-                    optimizers['primary'], 
-                    schedulers['primary']
+                    checkpoint_path= checkpoint_path['primary'], 
+                    model= models['primary'],
+                    optimizer= optimizers['primary'], 
+                    scheduler= schedulers['primary'], 
+                    device= device
                 )
                 starting_epoch = 1
 
             models['correcting'], _, _ = load_checkpoint(
-                checkpoint_path['correcting'], 
-                models['correcting'],
-                optimizers['correcting'], 
-                schedulers['correcting']
+                checkpoint_path= checkpoint_path['correcting'], 
+                model= models['correcting'],
+                optimizer= optimizers['correcting'], 
+                scheduler= schedulers['correcting'], 
+                device= device
             )
 
             models['ancillary'], _, _ = load_checkpoint(
-                checkpoint_path['ancillary'], 
-                models['ancillary'],
-                optimizers['ancillary'], 
-                schedulers['ancillary']
+                checkpoint_path= checkpoint_path['ancillary'], 
+                model= models['ancillary'],
+                optimizer= optimizers['ancillary'], 
+                scheduler= schedulers['ancillary'], 
+                device= device
             )
     else:
         starting_epoch = 1
