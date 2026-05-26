@@ -533,30 +533,57 @@ def train(config: Config, checkpoint_path=None):
     lrs = []
     logger.info(f"Starting training from epoch: {starting_epoch}")
     
-    ## Stage 1
-    # stage1_training_loop(
-    #     starting_epoch, config, train_loaders, val_loader, train_transform,
-    #     val_transform, device, models, optimizers, schedulers, loss_funcs, 
-    #     scaler, logger, save_dir
-    # )
+    if config.training['training_stage'] == 1:
+        ## Stage 1
+        stage1_training_loop(
+            starting_epoch, config, train_loaders, val_loader, train_transform,
+            val_transform, device, models, optimizers, schedulers, loss_funcs, 
+            scaler, logger, save_dir
+        )
+        logger.info("Stage 1 Training finished successfully")
 
+    elif config.training['training_stage'] == 2:
+        ## Stage 2
+        ## 5) parse the right parameters to 2.nd stage
+        stage2_training_loop(
+            starting_epoch, config, train_loaders, val_loader, train_transform, 
+            val_transform, device, models, optimizers, schedulers, loss_funcs, 
+            scaler, logger, save_dir
+        )
+        logger.info("Stage 2 Training finished successfully")
 
-    ## 5) parse the right parameters to 2.nd stage
-    ## Stage 2
-    stage2_training_loop(
-        starting_epoch, config, train_loaders, val_loader, train_transform, 
-        val_transform, device, models, optimizers, schedulers, loss_funcs, 
-        scaler, logger, save_dir
-    )
+    elif config.training['training_stage'] == 3:
+        ## stage 3
+        stage3_training_loop(
+            starting_epoch, config, train_loaders, val_loader, train_transform, 
+            val_transform,device, models, optimizers, schedulers, loss_funcs, 
+            scaler, logger, save_dir
+        )
+        logger.info("Stage 3 Training finished successfully")
+    else:
+        
+        stage1_training_loop(
+            starting_epoch, config, train_loaders, val_loader, train_transform,
+            val_transform, device, models, optimizers, schedulers, loss_funcs, 
+            scaler, logger, save_dir
+        )
+        logger.info("Stage 1 Training finished successfully")
 
-    # ## stage 3
-    # stage3_training_loop(
-    #     starting_epoch, config, train_loaders, val_loader, train_transform, 
-    #     val_transform,device, models, optimizers, schedulers, loss_funcs, 
-    #     scaler, logger, save_dir
-    # )
-    
-    logger.info("All the 3 stages are finished successfully")
+        stage2_training_loop(
+            starting_epoch, config, train_loaders, val_loader, train_transform, 
+            val_transform, device, models, optimizers, schedulers, loss_funcs, 
+            scaler, logger, save_dir
+        )
+        logger.info("Stage 2 Training finished successfully")
+
+        stage3_training_loop(
+            starting_epoch, config, train_loaders, val_loader, train_transform, 
+            val_transform,device, models, optimizers, schedulers, loss_funcs, 
+            scaler, logger, save_dir
+        )
+        logger.info("Stage 3 Training finished successfully")
+        
+        logger.info("All the 3 stages are finished successfully")
 
 
 if __name__ == "__main__":
