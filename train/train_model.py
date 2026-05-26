@@ -289,30 +289,34 @@ def train(config: Config, checkpoint_path=None):
                                is_sup= True,
                                transform=val_transform)
     
-    fully_sup_train_loader = DataLoader(dataset=fully_sup_train_dataset, 
-                                        batch_size=config.training['batch_size'],
-                                        shuffle= True, pin_memory= True,
-                                        num_workers=4)
-    
-    f1_loader = DataLoader(dataset=f1_dataset, 
-                           batch_size=config.training['batch_size'],
-                           shuffle= True, pin_memory= True,
-                           num_workers=4)
-    
-    f2_loader = DataLoader(dataset=f2_dataset, 
-                           batch_size=config.training['batch_size'],
-                           shuffle= True, pin_memory= True,
-                           num_workers=4)
-    
-    weak_train_loader = DataLoader(dataset=weak_train_dataset, 
-                                   batch_size=config.training['batch_size'],
-                                   shuffle= True, pin_memory= True,
-                                   num_workers=4)
     train_loaders = {
-        "f_loader": fully_sup_train_loader,
-        "w_loader": weak_train_loader,
-        "f1_loader": f1_loader,
-        "f2_loader": f2_loader
+        "f_loader": DataLoader(
+            dataset=fully_sup_train_dataset, 
+            batch_size=config.training['batch_size'],
+            shuffle= True, pin_memory= True,
+            num_workers=4
+            ),
+
+        "w_loader": DataLoader(
+            dataset=weak_train_dataset, 
+            batch_size=config.training['batch_size'],
+            shuffle= True, pin_memory= True,
+            num_workers=4
+            ),
+
+        "f1_loader": DataLoader(
+            dataset=f1_dataset, 
+            batch_size=config.training['batch_size'],
+            shuffle= True, pin_memory= True,
+            num_workers=4
+            ),
+
+        "f2_loader": DataLoader(
+            dataset=f2_dataset, 
+            batch_size=config.training['batch_size'],
+            shuffle= True, pin_memory= True,
+            num_workers=4
+            )
     }
     val_loader = DataLoader(dataset=val_dataset, 
                             batch_size=config.training['batch_size'], 
@@ -560,8 +564,8 @@ def train(config: Config, checkpoint_path=None):
             scaler, logger, save_dir
         )
         logger.info("Stage 3 Training finished successfully")
+
     else:
-        
         stage1_training_loop(
             starting_epoch, config, train_loaders, val_loader, train_transform,
             val_transform, device, models, optimizers, schedulers, loss_funcs, 
@@ -582,7 +586,7 @@ def train(config: Config, checkpoint_path=None):
             scaler, logger, save_dir
         )
         logger.info("Stage 3 Training finished successfully")
-        
+
         logger.info("All the 3 stages are finished successfully")
 
 
