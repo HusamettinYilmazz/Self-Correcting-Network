@@ -28,7 +28,7 @@ from train_3rd_stage import train_primary_model_epoch, validate_primary_model
 
 
 def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_loader, 
-                         train_transform, val_transform,device, models,
+                         train_transform, val_transform, device, models,
                          optimizers, schedulers, loss_funcs, scaler, logger, save_dir):
     
     lrs = []
@@ -80,7 +80,8 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
                 config = config, 
                 train_transform = train_transform, 
                 val_transform = val_transform, 
-                save_dir = save_dir
+                save_dir = save_dir,
+                model_name= "ancillary"
             )
         
     logger.info(f"First stage training completed successfully")
@@ -90,8 +91,8 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
     return 
 
 def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_loader, 
-                         train_transform, val_transform,device, models,
-                         optimizers, schedulers, loss_func, scaler, logger, save_dir):
+                         train_transform, val_transform, device, models,
+                         optimizers, schedulers, loss_funcs, scaler, logger, save_dir):
     
     prim_lrs, corr_lrs = [], []
     logger.info("Stage 2: Primary Model ans Self Correcting Network Training")
@@ -105,8 +106,8 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
                     device=device,
                     models=models,
                     optimizers=optimizers,
-                    loss_func=loss_func,
-                    scaler=scaler,
+                    loss_funcs=loss_funcs,
+                    schedulers=schedulers,
                     logger=logger
                 )
 
@@ -116,7 +117,7 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
                         data_loader=val_loader,
                         device=device,
                         models=models,
-                        loss_func=loss_func,
+                        loss_funcs=loss_funcs,
                         class_names=config.model["class_labels"],
                         logger=logger,
                         save_dir=save_file
@@ -124,13 +125,11 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
 
         
         
-        logger.info(f"Current learning rate for primary model: \
-                    {optimizers['primary'].param_groups[0]['lr']}")
-        logger.info(f"Current learning rate for correcting network: \
-                    {optimizers['correcting'].param_groups[0]['lr']}")
+        logger.info(f"Current learning rate for primary model: {optimizers['primary'].param_groups[0]['lr']}")
+        logger.info(f"Current learning rate for correcting network: {optimizers['correcting'].param_groups[0]['lr']}")
         
-        schedulers["primary"].step(val_metrics['primary_avg_loss'])
-        schedulers["correcting"].step(val_metrics['correcting_avg_loss'])
+        # schedulers["primary"].step(val_metrics['primary_avg_loss'])
+        # schedulers["correcting"].step(val_metrics['correcting_avg_loss'])
         
         prim_lr = optimizers['primary'].param_groups[0]['lr']
         corr_lr = optimizers['correcting'].param_groups[0]['lr']
@@ -139,29 +138,34 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
         corr_lrs.append(corr_lr)
         
         # 6) Parse scheduler with each checkpoint
-        save_checkpoint(epoch, 
-                        models["primary"],
-                        optimizers['primary'], 
-                        prim_lr, 
-                        val_metrics['primary_acc_per_class'], 
-                        config, 
-                        train_transform, 
-                        val_transform, 
-                        save_dir,
-                        model_name="primary"
-        )
+        if epoch % 30 == 0:
+            save_checkpoint(
+                epoch= epoch, 
+                model= models["primary"],
+                optimizer= optimizers['primary'], 
+                scheduler= schedulers['primary'],
+                cur_lr= prim_lr, 
+                val_acc= val_metrics['primary_acc_per_class'], 
+                config= config, 
+                train_transform= train_transform, 
+                val_transform= val_transform, 
+                save_dir= save_dir,
+                model_name= "primary"
+            )
 
-        save_checkpoint(epoch, 
-                        models["correcting"],
-                        optimizers['correcting'], 
-                        corr_lr, 
-                        val_metrics['correcting_acc_per_class'], 
-                        config, 
-                        train_transform, 
-                        val_transform, 
-                        save_dir,
-                        model_name="correcting"
-        )
+            save_checkpoint(
+                epoch= epoch, 
+                model= models["correcting"],
+                optimizer= optimizers['correcting'], 
+                scheduler= schedulers['correcting'],
+                cur_lr= prim_lr, 
+                val_acc= val_metrics['correcting_acc_per_class'], 
+                config= config, 
+                train_transform= train_transform, 
+                val_transform= val_transform, 
+                save_dir= save_dir,
+                model_name= "correcting"
+            )
         
     logger.info(f"Second stage training completed successfully")
 
