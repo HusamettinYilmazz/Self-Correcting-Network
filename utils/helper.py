@@ -22,8 +22,9 @@ def load_config(config_path="config.yaml"):
     config = Config(config)
     return config
 
-def save_checkpoint(epoch, model, optimizer, cur_lr, val_acc, config, 
-                    train_transform, val_transform, save_dir, model_name="model"):
+def save_checkpoint(epoch, model, optimizer, scheduler, cur_lr,
+                    val_acc, config, train_transform, 
+                    val_transform, save_dir, model_name="model"):
     
     checkpoint_path = os.path.join(save_dir, f'epoch{epoch}_{model_name}.pth')
 
@@ -32,6 +33,7 @@ def save_checkpoint(epoch, model, optimizer, cur_lr, val_acc, config,
             'epoch': epoch,
             'model_state_dict': state_dict,
             'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': scheduler.state_dict() if scheduler else None,
             'learning_rate': cur_lr,
             'val_accuracy': val_acc,
             'config': config,

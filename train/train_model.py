@@ -70,15 +70,18 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
         lrs.append(cur_lr)
         
         if epoch % 30 == 0:
-            save_checkpoint(epoch, 
-                            models["ancillary"],
-                            optimizers['ancillary'], 
-                            cur_lr, 
-                            val_metrics['acc_per_class'], 
-                            config, 
-                            train_transform, 
-                            val_transform, 
-                            save_dir)
+            save_checkpoint(
+                epoch= epoch, 
+                model = models["ancillary"],
+                optimizer = optimizers['ancillary'], 
+                scheduler = schedulers['ancillary'],
+                cur_lr = cur_lr, 
+                val_acc = val_metrics['acc_per_class'], 
+                config = config, 
+                train_transform = train_transform, 
+                val_transform = val_transform, 
+                save_dir = save_dir
+            )
         
     logger.info(f"First stage training completed successfully")
 
@@ -398,7 +401,15 @@ def train(config: Config, checkpoint_path=None):
             models['ancillary'].load_state_dict(state_dict)
         
         optimizers['ancillary'].load_state_dict(checkpoint['optimizer_state_dict'])
-        optimizers['ancillary'].param_groups[0]['lr'] = checkpoint['learning_rate']
+        
+        if ('scheduler_state_dict' in checkpoint and 
+            checkpoint['scheduler_state_dict'] is not None):
+
+            schedulers['ancillary'].load_state_dict(checkpoint['scheduler_state_dict'])
+
+
+        for param_group in optimizers['ancillary'].param_groups:
+            param_group['lr'] = checkpoint['learning_rate']
 
     else:
         starting_epoch = 1
