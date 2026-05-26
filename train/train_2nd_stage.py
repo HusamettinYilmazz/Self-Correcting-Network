@@ -49,8 +49,7 @@ def train_correction_model_epoch(epoch, data_loader, device, models, optimizers,
             
 
         if batch_idx % 20 == 0:
-            logger.info(f"TRAIN PRIMARY MODEL: Epoch:{epoch} at Batch:{batch_idx}/{len(data_loader)} Loss:{primary_ce_loss.item():.3f}")
-            logger.info(f"TRAIN CORRECTING NETWORK: Epoch:{epoch} at Batch:{batch_idx}/{len(data_loader)} Loss:{correcting_ce_loss.item():.3f}")
+            logger.info(f"TRAIN: Epoch:{epoch} at Batch:{batch_idx}/{len(data_loader)} primary model oss:{primary_ce_loss.item():.3f} | correcting network loss:{correcting_ce_loss.item():.3f}")
     
     primary_avg_loss = total_primary_loss/ len(data_loader)
     correcting_avg_loss = total_correcting_loss/ len(data_loader)

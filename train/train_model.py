@@ -95,9 +95,9 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
                          optimizers, schedulers, loss_funcs, scaler, logger, save_dir):
     
     prim_lrs, corr_lrs = [], []
-    logger.info("Stage 2: Primary Model ans Self Correcting Network Training")
+    logger.info("Stage 2: Primary Model and Self Correcting Network Training")
+    logger.info(f"Stage 1 training dataset size: {len(train_loaders['f_loader'])*config.training['batch_size']}")
     for epoch in range(1, config.training['stage2_num_epochs']+1):
-
         logger.info(f"Epoch: {epoch}/{config.training['stage2_num_epochs']}")
         
         _, _ = train_correction_model_epoch(
