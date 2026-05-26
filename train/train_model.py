@@ -138,6 +138,7 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
         prim_lrs.append(prim_lr)
         corr_lrs.append(corr_lr)
         
+        # 6) Parse scheduler with each checkpoint
         save_checkpoint(epoch, 
                         models["primary"],
                         optimizers['primary'], 
@@ -318,49 +319,69 @@ def train(config: Config, checkpoint_path=None):
                             shuffle= True, pin_memory= True,
                             num_workers=4)
 
-    primary_model = PrimarySegmentationModel(
-        num_classes=config.model["num_classes"]
-    )
-    
-    ## For stage 1 traning:
-    ancillary_model = AncillarySegmentationModel(
-        num_classes=config.model["num_classes"]
-    )
-    # ancillary_model = AncillarySegmentationModel(
-    #     num_classes=config.model["num_classes"]).to(device)
-    
-    correcting_model = SelfCorrectingNetwrokFactory().build_correction_module(
-        variant = "conv_correction", 
-        num_classes=config.model["num_classes"]
-    )
+    """
+    MODEL + CHECKPOINT
+    """
 
-    if torch.cuda.device_count() > 1:
-        ancillary_model = torch.nn.DataParallel(ancillary_model)
-
-    ancillary_model = ancillary_model.to(device)
     models = {
-        "primary": primary_model,
-        "ancillary": ancillary_model,
-        "correcting": correcting_model
+        "primary": PrimarySegmentationModel(
+            num_classes=config.model["num_classes"]
+        ),
+        
+        "ancillary": AncillarySegmentationModel(
+            num_classes=config.model["num_classes"]
+        ),
+        
+        "correcting": SelfCorrectingNetwrokFactory().build_correction_module(
+            variant = "conv_correction", 
+            num_classes=config.model["num_classes"]
+        )
     }
 
+    if config.training['training_stage'] == 1:
+        ## 2) Parallel training using multible models.
+        if torch.cuda.device_count() > 1:
+            models['ancillary'] = torch.nn.DataParallel(models['ancillary'])
+        models['ancillary'] = models['ancillary'].to(device)
+
+    else:
+        if torch.cuda.device_count() > 1:
+            if config.training['training_stage'] == 2:        
+                models['primary'] = torch.nn.DataParallel(models['primary'])
+                models['correcting'] = torch.nn.DataParallel(models['correcting'])
+            
+            elif config.training['training_stage'] == 3:
+                models['primary'] = torch.nn.DataParallel(models['primary'])
+            
+            else: ## if all stages trained in one time
+                models['ancillary'] = torch.nn.DataParallel(models['ancillary'])
+                models['primary'] = torch.nn.DataParallel(models['primary'])
+                models['correcting'] = torch.nn.DataParallel(models['correcting'])
+            
+
+        models['primary'] = models['primary'].to(device)
+        models['ancillary'] = models['ancillary'].to(device)
+        models['correcting'] = models['correcting'].to(device)
+    
+
     optimizers = {
-        "primary": AdamW(primary_model.parameters(), 
+        "primary": AdamW(models['primary'].parameters(), 
                          lr=float(config.training['learning_rate']),
                          weight_decay=float(config.training['weight_decay'])
         ),
 
-        "ancillary": AdamW(ancillary_model.parameters(), 
+        "ancillary": AdamW(models['ancillary'].parameters(), 
                            lr=float(config.training['learning_rate']),
                            weight_decay=float(config.training['weight_decay'])
         ),
 
-        "correcting": AdamW(correcting_model.parameters(), 
+        "correcting": AdamW(models['correcting'].parameters(), 
                             lr=float(config.training['learning_rate']),
                             weight_decay=float(config.training['weight_decay'])
         ),
     }
     
+    ## 3) Fix used scheduler for each model + calculating of total_steps for each one
     total_epochs = config.training['stage1_num_epochs']
     steps_per_epoch = len(f1_loader)
     total_steps = total_epochs * steps_per_epoch
@@ -391,6 +412,7 @@ def train(config: Config, checkpoint_path=None):
     }
     scaler = GradScaler()
 
+    ## 4) How to load a model consists of multible modules (primary + correcting)
     if checkpoint_path:
         checkpoint = torch.load(checkpoint_path, map_location=device)
         starting_epoch = checkpoint['epoch'] + 1
@@ -428,20 +450,21 @@ def train(config: Config, checkpoint_path=None):
     lrs = []
     logger.info(f"Starting training from epoch: {starting_epoch}")
     
-    stage1_training_loop(
-        starting_epoch, config, train_loaders, val_loader, train_transform,
-        val_transform, device, models, optimizers, schedulers, loss_funcs, 
-        scaler, logger, save_dir
-    )
-
-
-
-    # ## Stage 2
-    # stage2_training_loop(
-    #     starting_epoch, config, train_loaders, val_loader, train_transform, 
+    ## Stage 1
+    # stage1_training_loop(
+    #     starting_epoch, config, train_loaders, val_loader, train_transform,
     #     val_transform, device, models, optimizers, schedulers, loss_funcs, 
     #     scaler, logger, save_dir
     # )
+
+
+    ## 5) parse the right parameters to 2.nd stage
+    ## Stage 2
+    stage2_training_loop(
+        starting_epoch, config, train_loaders, val_loader, train_transform, 
+        val_transform, device, models, optimizers, schedulers, loss_funcs, 
+        scaler, logger, save_dir
+    )
 
     # ## stage 3
     # stage3_training_loop(
