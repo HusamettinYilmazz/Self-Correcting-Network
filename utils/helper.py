@@ -44,6 +44,35 @@ def save_checkpoint(epoch, model, optimizer, scheduler, cur_lr,
 
     print(f"Epoch:{epoch} checkpoint has been saved at:{checkpoint_path}")
 
+def load_checkpoint(checkpoint_path, model, optimizer, scheduler, device):
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    starting_epoch = checkpoint['epoch'] + 1
+    state_dict = checkpoint['model_state_dict']
+    if hasattr(model, "module"):
+        model.module.load_state_dict(state_dict)
+    else:
+        model.load_state_dict(state_dict)
+    
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    
+    if ('scheduler_state_dict' in checkpoint and 
+        checkpoint['scheduler_state_dict'] is not None):
+
+        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+
+
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = checkpoint['learning_rate']
+    
+    state = {
+        "starting_epoch": starting_epoch, 
+        "model": model, 
+        "optimizer": optimizer, 
+        "scheduler": scheduler
+    }
+
+    return state
+
 def lr_vs_epoch(num_epochs, lrs, save_dir):
     plt.figure(figsize=(8, 5))
     plt.plot(range(1, num_epochs + 1), lrs, marker='o', linestyle='-')
