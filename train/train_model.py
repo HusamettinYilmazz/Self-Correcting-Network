@@ -108,6 +108,7 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
                     optimizers=optimizers,
                     loss_funcs=loss_funcs,
                     schedulers=schedulers,
+                    accum_steps=config.training['grad_acc_steps'],
                     logger=logger
                 )
 
@@ -137,7 +138,6 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
         prim_lrs.append(prim_lr)
         corr_lrs.append(corr_lr)
         
-        # 6) Parse scheduler with each checkpoint
         if epoch % 30 == 0:
             save_checkpoint(
                 epoch= epoch, 
@@ -554,7 +554,6 @@ def train(config: Config, checkpoint_path=None):
     logger.info(f"Starting training from epoch: {starting_epoch}")
     
     if config.training['training_stage'] == 1:
-        ## Stage 1
         stage1_training_loop(
             starting_epoch, config, train_loaders, val_loader, train_transform,
             val_transform, device, models, optimizers, schedulers, loss_funcs, 
@@ -563,8 +562,6 @@ def train(config: Config, checkpoint_path=None):
         logger.info("Stage 1 Training finished successfully")
 
     elif config.training['training_stage'] == 2:
-        ## Stage 2
-        ## 5) parse the right parameters to 2.nd stage
         stage2_training_loop(
             starting_epoch, config, train_loaders, val_loader, train_transform, 
             val_transform, device, models, optimizers, schedulers, loss_funcs, 
@@ -573,7 +570,6 @@ def train(config: Config, checkpoint_path=None):
         logger.info("Stage 2 Training finished successfully")
 
     elif config.training['training_stage'] == 3:
-        ## stage 3
         stage3_training_loop(
             starting_epoch, config, train_loaders, val_loader, train_transform, 
             val_transform,device, models, optimizers, schedulers, loss_funcs, 
