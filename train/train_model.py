@@ -102,7 +102,7 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
         
         _, _ = train_correction_model_epoch(
                     epoch=epoch,
-                    data_loader=train_loaders['f2_loader'],
+                    data_loader=train_loaders['f_loader'],
                     device=device,
                     models=models,
                     optimizers=optimizers,
