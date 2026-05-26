@@ -376,24 +376,46 @@ def train(config: Config, checkpoint_path=None):
         ),
     }
     
-    ## 3) Fix used scheduler for each model + calculating of total_steps for each one
-    total_epochs = config.training['stage1_num_epochs']
-    steps_per_epoch = len(f1_loader)
-    total_steps = total_epochs * steps_per_epoch
-    
+    if config.training['training_stage'] == 2:
+        primary_scheduler = lr_scheduler.LambdaLR(
+            optimizers['primary'],
+            lr_lambda=lambda it: (1 - 
+                                  it / (config.training['stage2_num_epochs'] * 
+                                        len(train_loaders['f_loader']) /
+                                        config.training['grad_acc_steps'])
+                                  ) ** 0.9
+        )
+    else:
+        primary_scheduler = lr_scheduler.LambdaLR(
+            optimizers['primary'],
+            lr_lambda=lambda it: (1 - 
+                                  it / (config.training['stage3_num_epochs'] * 
+                                        (len(train_loaders['f_loader']) + 
+                                        len(train_loaders['w_loader'])) / 
+                                        config.training['grad_acc_steps'])
+                                  ) ** 0.9
+        )
+
     schedulers = {
-        "primary": lr_scheduler.ReduceLROnPlateau(
-            optimizer=optimizers["primary"], mode='min', factor=0.1, patience=2
-        ),
+        "primary": primary_scheduler,
 
         "ancillary": lr_scheduler.LambdaLR(
             optimizers['ancillary'],
-            lr_lambda=lambda it: (1 - it / total_steps) ** 0.9
+            lr_lambda=lambda it: (1 - 
+                                  it / (config.training['stage1_num_epochs'] * 
+                                        len(train_loaders['f1_loader']) / 
+                                        config.training['grad_acc_steps'])
+                                  ) ** 0.9
         ),
 
-        "correcting": lr_scheduler.ReduceLROnPlateau(
-            optimizer=optimizers["correcting"], mode='min', factor=0.1, patience=2
-        )
+        "correcting": lr_scheduler.LambdaLR(
+            optimizers['correcting'],
+            lr_lambda=lambda it: (1 - 
+                                  it / (config.training['stage2_num_epochs'] * 
+                                        len(train_loaders['f_loader']) / 
+                                        config.training['grad_acc_steps'])
+                                  ) ** 0.9
+        ),
     }
 
     weights = torch.tensor([
