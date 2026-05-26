@@ -32,8 +32,8 @@ def train_correction_model_epoch(epoch, data_loader, device, models, optimizers,
         total_primary_loss += primary_ce_loss.item()
         total_correcting_loss += correcting_ce_loss.item()
 
-        acc_primary_loss = total_primary_loss / accum_steps
-        acc_correcting_loss = total_correcting_loss / accum_steps
+        acc_primary_loss = primary_ce_loss / accum_steps
+        acc_correcting_loss = correcting_ce_loss / accum_steps
 
         acc_primary_loss.backward()
         acc_correcting_loss.backward()
