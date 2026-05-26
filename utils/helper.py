@@ -46,7 +46,7 @@ def save_checkpoint(epoch, model, optimizer, scheduler, cur_lr,
 
 def load_checkpoint(checkpoint_path, model, optimizer, scheduler, device):
     checkpoint = torch.load(checkpoint_path, map_location=device)
-    starting_epoch = checkpoint['epoch'] + 1
+    epoch = checkpoint['epoch']
     state_dict = checkpoint['model_state_dict']
     if hasattr(model, "module"):
         model.module.load_state_dict(state_dict)
@@ -65,7 +65,7 @@ def load_checkpoint(checkpoint_path, model, optimizer, scheduler, device):
         param_group['lr'] = checkpoint['learning_rate']
     
     state = {
-        "starting_epoch": starting_epoch, 
+        "epoch": epoch, 
         "model": model, 
         "optimizer": optimizer, 
         "scheduler": scheduler
