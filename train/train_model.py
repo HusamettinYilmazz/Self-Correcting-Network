@@ -485,13 +485,14 @@ def train(config: Config, checkpoint_path=None):
             else:
                 starting_epoch = 1
 
-            models['ancillary'], _, _ = load_checkpoint(
+            ancillary_state = load_checkpoint(
                 checkpoint_path= checkpoint_path['ancillary'], 
                 model= models['ancillary'],
                 optimizer= optimizers['ancillary'], 
                 scheduler= schedulers['ancillary'], 
                 device= device
             )
+            models['ancillary'] = ancillary_state['model']
 
         elif config.training['training_stage'] == 3:
             if config.training['continue_traning']:
@@ -508,30 +509,33 @@ def train(config: Config, checkpoint_path=None):
                 schedulers['primary'] = primary_state['scheduler']
 
             else:
-                models['primary'], _, _ = load_checkpoint(
+                primary_state = load_checkpoint(
                     checkpoint_path= checkpoint_path['primary'], 
                     model= models['primary'],
                     optimizer= optimizers['primary'], 
                     scheduler= schedulers['primary'], 
                     device= device
                 )
+                models['primary'] = primary_state['model']
                 starting_epoch = 1
 
-            models['correcting'], _, _ = load_checkpoint(
+            correcting_state = load_checkpoint(
                 checkpoint_path= checkpoint_path['correcting'], 
                 model= models['correcting'],
                 optimizer= optimizers['correcting'], 
                 scheduler= schedulers['correcting'], 
                 device= device
             )
+            models['correcting'] = correcting_state['model']
 
-            models['ancillary'], _, _ = load_checkpoint(
+            ancillary_state = load_checkpoint(
                 checkpoint_path= checkpoint_path['ancillary'], 
                 model= models['ancillary'],
                 optimizer= optimizers['ancillary'], 
                 scheduler= schedulers['ancillary'], 
                 device= device
             )
+            models['ancillary'] = ancillary_state['model']
     else:
         starting_epoch = 1
     
