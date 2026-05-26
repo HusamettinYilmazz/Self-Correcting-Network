@@ -14,7 +14,7 @@ from albumentations.pytorch import ToTensorV2
 
 
 from datasets import VOCDataset
-from utils import Config, load_config, lr_vs_epoch, save_checkpoint
+from utils import Config, load_config, lr_vs_epoch, save_checkpoint, load_checkpoint
 from utils.logger import Logger
 from utils.dice_loss import DiceLoss
 
@@ -319,10 +319,6 @@ def train(config: Config, checkpoint_path=None):
                             shuffle= True, pin_memory= True,
                             num_workers=4)
 
-    """
-    MODEL + CHECKPOINT
-    """
-
     models = {
         "primary": PrimarySegmentationModel(
             num_classes=config.model["num_classes"]
@@ -339,7 +335,6 @@ def train(config: Config, checkpoint_path=None):
     }
 
     if config.training['training_stage'] == 1:
-        ## 2) Parallel training using multible models.
         if torch.cuda.device_count() > 1:
             models['ancillary'] = torch.nn.DataParallel(models['ancillary'])
         models['ancillary'] = models['ancillary'].to(device)
@@ -412,27 +407,93 @@ def train(config: Config, checkpoint_path=None):
     }
     scaler = GradScaler()
 
-    ## 4) How to load a model consists of multible modules (primary + correcting)
     if checkpoint_path:
-        checkpoint = torch.load(checkpoint_path, map_location=device)
-        starting_epoch = checkpoint['epoch'] + 1
-        state_dict = checkpoint['model_state_dict']
-        if hasattr(models['ancillary'], "module"):
-            models['ancillary'].module.load_state_dict(state_dict)
-        else:
-            models['ancillary'].load_state_dict(state_dict)
-        
-        optimizers['ancillary'].load_state_dict(checkpoint['optimizer_state_dict'])
-        
-        if ('scheduler_state_dict' in checkpoint and 
-            checkpoint['scheduler_state_dict'] is not None):
+        if config.training['training_stage'] == 1:
+            if config.training['continue_traning']:
+                ancillary_state = load_checkpoint(
+                    checkpoint_path['ancillary'], 
+                    models['ancillary'],
+                    optimizers['ancillary'], 
+                    schedulers['ancillary']
+                )
 
-            schedulers['ancillary'].load_state_dict(checkpoint['scheduler_state_dict'])
+                starting_epoch = ancillary_state['epoch'] + 1
+                models['ancillary'] = ancillary_state['model']
+                optimizers['ancillary'] = ancillary_state['optimizer']
+                schedulers['ancillary'] = ancillary_state['scheduler']
+            else:
+                starting_epoch = 1
 
+        elif config.training['training_stage'] == 2:
+            if config.training['continue_traning']:
+                primary_state = load_checkpoint(
+                    checkpoint_path['primary'], 
+                    models['primary'],
+                    optimizers['primary'], 
+                    schedulers['primary']
+                )
+                models['primary'] = primary_state['model']
+                optimizers['primary'] = primary_state['optimizer']
+                schedulers['primary'] = primary_state['scheduler']
 
-        for param_group in optimizers['ancillary'].param_groups:
-            param_group['lr'] = checkpoint['learning_rate']
+                correcting_state = load_checkpoint(
+                    checkpoint_path['correcting'], 
+                    models['correcting'],
+                    optimizers['correcting'], 
+                    schedulers['correcting']
+                )
+                
+                models['correcting'] = correcting_state['model']
+                optimizers['correcting'] = correcting_state['optimizer'] 
+                schedulers['correcting'] = correcting_state['scheduler']
 
+                starting_epoch = min(primary_state['epoch'], correcting_state['epoch']) + 1
+
+            else:
+                starting_epoch = 1
+
+            models['ancillary'], _, _ = load_checkpoint(
+                checkpoint_path['ancillary'], 
+                models['ancillary'],
+                optimizers['ancillary'], 
+                schedulers['ancillary']
+            )
+
+        elif config.training['training_stage'] == 3:
+            if config.training['continue_traning']:
+                primary_state = load_checkpoint(
+                    checkpoint_path['primary'], 
+                    models['primary'],
+                    optimizers['primary'], 
+                    schedulers['primary']
+                )
+                starting_epoch = primary_state['epoch'] + 1
+                models['primary'] = primary_state['model']
+                optimizers['primary'] = primary_state['optimizer']
+                schedulers['primary'] = primary_state['scheduler']
+
+            else:
+                models['primary'], _, _ = load_checkpoint(
+                    checkpoint_path['primary'], 
+                    models['primary'],
+                    optimizers['primary'], 
+                    schedulers['primary']
+                )
+                starting_epoch = 1
+
+            models['correcting'], _, _ = load_checkpoint(
+                checkpoint_path['correcting'], 
+                models['correcting'],
+                optimizers['correcting'], 
+                schedulers['correcting']
+            )
+
+            models['ancillary'], _, _ = load_checkpoint(
+                checkpoint_path['ancillary'], 
+                models['ancillary'],
+                optimizers['ancillary'], 
+                schedulers['ancillary']
+            )
     else:
         starting_epoch = 1
     
