@@ -9,3 +9,14 @@
   This framework enables joint learning from a small fully supervised dataset and large weakly labeled data, using self-correcting networks to refine predictions and reduce annotation noise 
 </p>
 
+
+## Table of Content
+1. [Stage 1](#stage-1)
+    - [Ancillary Model](#ancillary-model)
+    - [Loss Function](#loss-function)
+    - [Hyperparameters](#hyperparameteres)
+    - [Training Setup](#training-setup)
+    - [Dataset](#dataset)
+2. [Stage 2](#stage-2)
+
+
