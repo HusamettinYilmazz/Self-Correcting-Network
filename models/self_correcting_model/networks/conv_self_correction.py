@@ -16,4 +16,4 @@ class ConvCorrectionModule(SelfCorrectionModule):
     def forward(self, primary_logits: torch.Tensor, ancillary_logits: torch.Tensor) -> torch.Tensor:
         combined = torch.cat([primary_logits, ancillary_logits], dim=1)
         logits = self.net(combined)
-        return torch.softmax(logits, dim=1)
+        return logits
