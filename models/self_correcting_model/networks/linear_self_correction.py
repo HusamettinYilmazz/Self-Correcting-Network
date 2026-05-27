@@ -25,4 +25,4 @@ class LinearCorrectionModule(SelfCorrectionModule):
     def forward(self, primary_logits: torch.Tensor, ancillary_logits: torch.Tensor) -> torch.Tensor:
         alpha = self._alpha
         blended_logits = (primary_logits + alpha * ancillary_logits) / (alpha + 1.0)
-        return torch.softmax(blended_logits, dim=1)
+        return blended_logits
