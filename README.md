@@ -48,3 +48,21 @@ Same as Deeplabv3+ decoder the decoder is expecting multi scale feature maps.
 Both fused low and high scales are passed to decoder 
 low is passed to internal layer of the decoder and
 high is passed to the begining of the decoder.
+
+### Loss Function
+The model is learning conditional probability distribution over input image (x) and weak labeled mask (b)
+<p align="center">P<sub>anc</sub>(y | x, b)</p>
+
+The loss function is normal <strong>Cross Entropy</strong>
+<p align="center">
+L = -log P<sub>anc</sub>(y | x, b)
+</p>
+
+### Hyperparameters
+|Parameter|Value|
+|---|---|
+|Learning rate|7e-3|
+|Scheduler|custom: batch based scheduler|
+|Optimizer|AdamW|
+|Gradient Accumulation|2 batches|
+|Epochs|650|
