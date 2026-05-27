@@ -66,3 +66,10 @@ L = -log P<sub>anc</sub>(y | x, b)
 |Optimizer|AdamW|
 |Gradient Accumulation|2 batches|
 |Epochs|650|
+
+### Training Setup
+The paper authours used <strong>4 GPUs, each with a batch of 4 images</strong>.
+I trained the model on Kaggle free tier <strong>2 GPU T4 each with a batch of 4 images, I used gradient accumulation = 2 to match authour's setup.</strong> kaggle doesn't allow continous training more than 12 hours. so I trained multible iterations on total it took around 48 hours.
+
+### Training Dataset
+Half of the fully supervised training dataset is used in this stage to prevent data leakage in the next stage where the self-correcting network is using the ancillary model outputs.
