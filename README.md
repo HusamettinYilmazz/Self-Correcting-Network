@@ -11,12 +11,13 @@
 
 
 ## Table of Content
-1. [Stage 1](#stage-1)
-    - [Ancillary Model](#ancillary-model)
+1. [Stage 1: Ancillary Model Training](#stage-1-ancillary-model-training)
+    - [Model Architecture](#model-architecture)
     - [Loss Function](#loss-function)
     - [Hyperparameters](#hyperparameteres)
     - [Training Setup](#training-setup)
-    - [Dataset](#dataset)
+    - [Training Dataset](#training-dataset)
 2. [Stage 2](#stage-2)
 
 
+<strong>The approach in the paper divides training into three stages: the first trains the ancillary model, the second trains the self-correcting network, and the third focuses on the primary model.</strong>
