@@ -21,3 +21,30 @@
 
 
 <strong>The approach in the paper divides training into three stages: the first trains the ancillary model, the second trains the self-correcting network, and the third focuses on the primary model.</strong>
+
+## Stage 1 Ancillary Model Training
+
+<div align="center">
+  <img src="assets/readme_images/ancillary_model_arch.png" alt="Background Image" width="95%" />
+</div>
+Stage 1 trains the ancillary model to learn robust representations from weakly labeled examples.
+
+### Model Architecture
+the model is built on standard encoder-decoder segmentation models (DeepLabV3+ is used in my implementation), the paper is extending the architecture with additional bounding box input.
+
+1. Image Encoder:
+The input image is processed by a pretrained conv encoder (Resnet101 is used in my implementation). it produces 2 scale feature maps (low and high feature maps).
+
+2. Bounding Box Encoder:
+This encoder takes the weak labeled mask to encode box information into spatial attention map.
+
+The input weak mask is resized (using 3x3 Conv followed by sigmoid activation) to match the spatial resolution of low and high feature map.
+
+3. Feature Attention Fusion:
+In this step the output of bounding box encoder (box low and high) are fused with the low and high attention map from Image encoder using <strong>Element wise multiplication </strong>.
+
+4. Decoder:
+Same as Deeplabv3+ decoder the decoder is expecting multi scale feature maps.
+Both fused low and high scales are passed to decoder 
+low is passed to internal layer of the decoder and
+high is passed to the begining of the decoder.
