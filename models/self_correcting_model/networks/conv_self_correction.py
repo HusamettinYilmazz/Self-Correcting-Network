@@ -9,7 +9,7 @@ class ConvCorrectionModule(SelfCorrectionModule):
         super().__init__()
         self.net = nn.Sequential(
             nn.Conv2d(num_classes * 2, 128, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
+            nn.ReLU(),
             nn.Conv2d(128, num_classes, kernel_size=3, padding=1),
         )
 
