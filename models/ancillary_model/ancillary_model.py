@@ -28,4 +28,3 @@ class AncillarySegmentationModel(nn.Module):
     def freeze(self):
         for p in self.parameters():
             p.requires_grad_(False)
-        self.eval()
