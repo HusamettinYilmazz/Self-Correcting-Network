@@ -32,6 +32,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
                          optimizers, schedulers, loss_funcs, scaler, logger, save_dir):
     
     lrs = []
+    best_miou = 0.0
     logger.info("Stage 1: Ancillary Model Training")
     logger.info(f"Stage 1 training dataset size: {len(train_loaders['f1_loader'])*config.training['batch_size']}")
     for epoch in range(starting_epoch, config.training['stage1_num_epochs']+1):
@@ -69,7 +70,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
         cur_lr = optimizers['ancillary'].param_groups[0]['lr']
         lrs.append(cur_lr)
         
-        if epoch % 30 == 0:
+        if val_metrics['mIoU'] > 0.5 and (epoch % 35 == 0 or val_metrics['mIoU'] > best_miou):
             save_checkpoint(
                 epoch= epoch, 
                 model = models["ancillary"],
@@ -83,6 +84,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
                 save_dir = save_dir,
                 model_name= "ancillary"
             )
+            best_miou = val_metrics['mIoU']
         
     logger.info(f"First stage training completed successfully")
 
@@ -96,7 +98,7 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
     
     prim_lrs, corr_lrs = [], []
     logger.info("Stage 2: Primary Model and Self Correcting Network Training")
-    logger.info(f"Stage 1 training dataset size: {len(train_loaders['f_loader'])*config.training['batch_size']}")
+    logger.info(f"Stage 2 training dataset size: {len(train_loaders['f_loader'])*config.training['batch_size']}")
     for epoch in range(1, config.training['stage2_num_epochs']+1):
         logger.info(f"Epoch: {epoch}/{config.training['stage2_num_epochs']}")
         
