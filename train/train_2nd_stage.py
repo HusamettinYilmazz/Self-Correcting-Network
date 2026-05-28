@@ -8,26 +8,29 @@ def train_correction_model_epoch(epoch, data_loader, device, models, optimizers,
     
     total_primary_loss, total_correcting_loss = 0.0, 0.0
     
+    optimizers["primary"].zero_grad()
+    optimizers["correcting"].zero_grad()
+
     models["primary"].train()
     models["correcting"].train()
+    models["ancillary"].freeze()
     models["ancillary"].eval()
     for batch_idx, (imgs, bboxs, masks) in enumerate(data_loader):
         imgs = imgs.to(device)
         bboxs = bboxs.to(device)
         masks = masks.to(device).long()
         
-        primary_outputs = models["primary"](imgs)
+        primary_logits = models["primary"](imgs)
         with torch.no_grad():
-            models["ancillary"].freeze()
-            ancillary_outputs = models["ancillary"](imgs, bboxs)
+            ancillary_logits = models["ancillary"](imgs, bboxs)
 
-        correcting_outputs = models["correcting"](
-            primary_outputs.detach(), 
-            ancillary_outputs.detach()
+        correcting_logits = models["correcting"](
+            primary_logits.detach(), 
+            ancillary_logits.detach()
         )
 
-        primary_ce_loss = loss_funcs["ce_loss"](primary_outputs, masks)
-        correcting_ce_loss = loss_funcs["ce_loss"](correcting_outputs, masks)
+        primary_ce_loss = loss_funcs["ce_loss"](primary_logits, masks)
+        correcting_ce_loss = loss_funcs["ce_loss"](correcting_logits, masks)
 
         total_primary_loss += primary_ce_loss.item()
         total_correcting_loss += correcting_ce_loss.item()
@@ -73,30 +76,30 @@ def validate_correction_model(epoch, data_loader, device, models, loss_funcs, cl
             bboxes = bboxes.to(device)
             masks = masks.to(device).long()
 
-            primary_outputs = models["primary"](imgs)
-            ancillary_outputs = models["ancillary"](imgs, bboxes)
-            correcting_outputs = models["correcting"](primary_outputs, ancillary_outputs)
+            primary_logits = models["primary"](imgs)
+            ancillary_logits = models["ancillary"](imgs, bboxes)
+            correcting_logits = models["correcting"](primary_logits, ancillary_logits)
             
-            primary_loss = loss_funcs["ce_loss"](primary_outputs, masks)
-            correcting_loss = loss_funcs["ce_loss"](correcting_outputs, masks)
+            primary_loss = loss_funcs["ce_loss"](primary_logits, masks)
+            correcting_loss = loss_funcs["ce_loss"](correcting_logits, masks)
 
             total_primary_loss += primary_loss.item()
             total_correcting_loss += correcting_loss.item()
 
-            # primary_preds = primary_outputs.argmax(dim=1)
-            # correcting_preds = correcting_outputs.argmax(dim=1)
+            # primary_preds = primary_logits.argmax(dim=1)
+            # correcting_preds = correcting_logits.argmax(dim=1)
             
             ## it has no real meaning (the training isn't done for this)
             primary_cm = compute_confusion_matrix(
                 masks,
-                primary_outputs,
+                primary_logits,
                 class_names,
                 ignore_index=255
             )
 
             correcting_cm = compute_confusion_matrix(
                 masks,
-                correcting_outputs,
+                correcting_logits,
                 class_names,
                 ignore_index=255
             )
@@ -123,8 +126,11 @@ def validate_correction_model(epoch, data_loader, device, models, loss_funcs, cl
         "correcting_acc_per_class": correcting_acc_per_class,
         "correcting_iou_per_class": correcting_iou_per_class,
 
+        "primary_mIoU":     primary_iou_per_class[1:].mean().item(),
+        "primary_avg_acc":  primary_acc_per_class[1:].mean().item(),
+
         "correcting_mIoU":     correcting_iou_per_class[1:].mean().item(),
-        "correcting_avg_acc":  correcting_iou_per_class[1:].mean().item(),
+        "correcting_avg_acc":  correcting_acc_per_class[1:].mean().item(),
     }
 
     if save_dir is not None:
