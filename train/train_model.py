@@ -381,7 +381,7 @@ def train(config: Config, checkpoint_path=None):
         ),
 
         "correcting": AdamW(models['correcting'].parameters(), 
-                            lr=float(config.training['learning_rate']),
+                            lr=float(config.training['correcting_lr']),
                             weight_decay=float(config.training['weight_decay'])
         ),
     }

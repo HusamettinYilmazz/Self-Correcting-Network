@@ -49,4 +49,5 @@ training:
   stage2_num_epochs: 650
   stage3_num_epochs: 15
   learning_rate: 7e-3
+  correcting_lr: 5e-4
   weight_decay: 1e-4
