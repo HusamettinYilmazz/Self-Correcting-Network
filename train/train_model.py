@@ -103,7 +103,7 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
     best_miou = 0.0
     logger.info("Stage 2: Primary Model and Self Correcting Network Training")
     logger.info(f"Stage 2 training dataset size: {len(train_loaders['f_loader'])*config.training['batch_size']}")
-    for epoch in range(1, config.training['stage2_num_epochs']+1):
+    for epoch in range(starting_epoch, config.training['stage2_num_epochs']+1):
         logger.info(f"Epoch: {epoch}/{config.training['stage2_num_epochs']}")
         
         _, _ = train_correction_model_epoch(
