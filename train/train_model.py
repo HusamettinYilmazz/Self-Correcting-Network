@@ -188,7 +188,7 @@ def stage3_training_loop(starting_epoch, config: Config, train_loaders, val_load
     
     lr = []
     logger.info("Stage 3: Primary Model Training")
-    for epoch in range(1, config.training['stage3_num_epochs']+1):
+    for epoch in range(starting_epoch, config.training['stage3_num_epochs']+1):
         logger.info(f"Epoch: {epoch}/{config.training['stage3_num_epochs']}")
         _ = train_primary_model_epoch(
                 epoch=epoch,
