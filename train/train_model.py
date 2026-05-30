@@ -70,7 +70,7 @@ def stage1_training_loop(starting_epoch, config: Config, train_loaders, val_load
         cur_lr = optimizers['ancillary'].param_groups[0]['lr']
         lrs.append(cur_lr)
         
-        if val_metrics['mIoU'] > 0.5 and (epoch % 35 == 0 or val_metrics['mIoU'] > best_miou):
+        if val_metrics['mIoU'] > 0.5 and (epoch % 35 == 0 or round(val_metrics['mIoU'], 2) > round(best_miou, 2)):
             save_checkpoint(
                 epoch= epoch, 
                 model = models["ancillary"],
