@@ -10,8 +10,8 @@ class AncillarySegmentationModel(nn.Module):
         self.encoder = SegmentationEncoder(backbone, pretrained)
         self.bb_encoder = BoundingBoxEncoder(
             num_classes,
-            low_level_channels=self.encoder.low_level_channels,
-            high_level_channels=256,
+            low_ch=self.encoder.low_level_channels,
+            high_ch=256,
         )
         self.decoder = SegmentationDecoder(self.encoder.low_level_channels, num_classes)
 
