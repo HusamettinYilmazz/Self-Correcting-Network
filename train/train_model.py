@@ -144,7 +144,7 @@ def stage2_training_loop(starting_epoch, config: Config, train_loaders, val_load
         prim_lrs.append(prim_lr)
         corr_lrs.append(corr_lr)
         
-        if val_metrics['correcting_mIoU'] > 0.7 and (epoch % 30 == 0 or round(val_metrics['correcting_mIoU'], 2) > round(best_miou, 2)):
+        if val_metrics['correcting_mIoU'] > 0.6 and (epoch % 30 == 0 or round(val_metrics['correcting_mIoU'], 2) > round(best_miou, 2)):
             save_checkpoint(
                 epoch= epoch, 
                 model= models["primary"],
