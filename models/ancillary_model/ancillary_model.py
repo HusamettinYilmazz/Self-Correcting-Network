@@ -19,7 +19,7 @@ class AncillarySegmentationModel(nn.Module):
         low, high = self.encoder(x)
 
         ## Fuse bounding box attention
-        attn_low, attn_high = self.bb_encoder(bb_mask, low.shape[-2:], high.shape[-2:])
+        attn_low, attn_high = self.bb_encoder(bb_mask, low, high, low.shape[-2:], high.shape[-2:])
         low = low * attn_low
         high = high * attn_high
 
