@@ -10,8 +10,8 @@ class AncillarySegmentationModel(nn.Module):
         self.encoder = SegmentationEncoder(backbone, pretrained)
         self.bb_encoder = BoundingBoxEncoder(
             num_classes,
-            low_ch=self.encoder.low_level_channels,
-            high_ch=256,
+            low_level_channels=self.encoder.low_level_channels,
+            high_level_channels=256,
         )
         self.decoder = SegmentationDecoder(self.encoder.low_level_channels, num_classes)
 
@@ -19,7 +19,7 @@ class AncillarySegmentationModel(nn.Module):
         low, high = self.encoder(x)
 
         ## Fuse bounding box attention
-        attn_low, attn_high = self.bb_encoder(bb_mask, low, high, low.shape[-2:], high.shape[-2:])
+        attn_low, attn_high = self.bb_encoder(bb_mask, low, high)
         low = low * attn_low
         high = high * attn_high
 
